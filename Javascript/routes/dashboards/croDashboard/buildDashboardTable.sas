@@ -43,10 +43,10 @@
   put '    html += "<h2 style=\"margin-bottom:20px;color:#1f2937;font-size:1.5rem;\">Risk Management Analytics</h2>";';
   put '    html += "<p style=\"margin-bottom:20px;color:#6b7280;\">Embedded Tableau dashboard providing a comprehensive overview of enterprise risk metrics and compliance status.</p>";';
   put '    html += "<div style=\"background:white;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.08);padding:10px;\">";';
-  /* DO NOT add a second <script> tag here ï¿½ the API script is already loaded in <head> */
+  /* DO NOT add a second <script> tag here — the API script is already loaded in <head> */
   put '    html += "<div class=\"tableauPlaceholder\" style=\"width:1850px;height:927px;\">";';
   put '    html += "  <object class=\"tableauViz\" width=\"1850\" height=\"927\" style=\"display:none;\">";';
-  put '    html += "    <param name=\"host_url\" value=\"https%3A%2F%2Ftableau.anb.net%2F\" />";'
+  put '    html += "    <param name=\"host_url\" value=\"https%3A%2F%2Ftableau.anb.net%2F\" />";';
   put '    html += "    <param name=\"embed_code_version\" value=\"3\" />";';
   /* Use real slashes in site_root and name, not HTML entity codes */
   put '    html += "    <param name=\"site_root\" value=\"/t/ANB\" />";';
@@ -63,12 +63,6 @@
 
 
 %mend buildAnalyticsDash;
-
-
-
-
-
-
 
 
 

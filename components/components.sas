@@ -13,7 +13,23 @@
     put '<h1>ERMS</h1>';
     put '</a>';
     put '<ul class="nav-menu">';
-    put "<li><a href='#dashboard' onclick='showRoute(""#dashboard""); return false;'>Dashboard</a></li>";
+    /* Dashboard dropdown - added in place of the old plain Dashboard link.
+       CRO Dashboard opens the Risk Appetite Framework section (CRO-only, see
+       Javascript/routes/riskAppetiteFramework/buildRAF.sas); Market/Credit/
+       Operational Risk point at the same #market/#credit/#operational hashes
+       the sidebar already referenced (now registered in router.sas). Inline
+       styles used here (not a new css.sas class) so this dropdown needs no
+       edit to the existing stylesheet - matches ERMS's own existing habit of
+       mixing inline styles with classes elsewhere in this file. */
+    put '<li style="position:relative;" id="rafDashboardDropdown">';
+    put '<a onclick="raf_toggleDashboardDropdown(event); return false;" style="display:flex; align-items:center; gap:6px; cursor:pointer;">Dashboard <i class="fas fa-caret-down" style="font-size:.75em;"></i></a>';
+    put '<ul id="rafDashboardDropdownMenu" style="display:none; position:absolute; top:100%; left:0; background:#ffffff; min-width:190px; border-radius:8px; box-shadow:0 12px 28px rgba(0,0,0,.18); padding:6px; margin-top:10px; z-index:1100;">';
+    put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#risk-appetite-framework''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">CRO Dashboard</a></li>';
+    put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#market''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Market Risk</a></li>';
+    put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#credit''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Credit Risk</a></li>';
+    put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#operational''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Operational Risk</a></li>';
+    put '</ul>';
+    put '</li>';
     put "<li><a href='#risk-categories' onclick='showRoute(""#risk-categories""); return false;'>Risk Category</a></li>";
     put "<li><a href='#analytics' onclick='showRoute(""#analytics""); return false;'>Analytics</a></li>";
     put '</ul>';
@@ -33,27 +49,20 @@
 %macro generate_sidebar;
     put '<aside class="sidebar" id="sidebar">';
     put '<ul class="sidebar-menu">';
-    put '<li><a href="#dashboard" class="active"><i class="fas fa-tachometer-alt"></i>CRO Dashboard</a></li>';
+    /* Renamed from "CRO Dashboard" - that label now belongs to the new Dashboard
+       dropdown's CRO Dashboard item (navbar, see generate_navbar), which opens
+       the Risk Appetite Framework. This entry still opens the original #dashboard
+       route (Limit Compliance / Loan Portfolio tables) - unchanged behavior,
+       clearer label only. */
+    put '<li><a href="#dashboard" class="active"><i class="fas fa-tachometer-alt"></i>Limit &amp; Portfolio Overview</a></li>';
     put '<li><a href="#risk-categories"><i class="fas fa-layer-group"></i>Risk Categories</a></li>';
-
-    /* Gated to match riskModulesConfig.sas - same ALLOWED_CATEGORIES list,
-       same %categoryAllowed predicate, so the sidebar never links to a
-       category the user's cards don't show. */
-    %if %categoryAllowed(regulatory) %then
-        put '<li><a href="#regulatory"><i class="fas fa-gavel"></i>Regulatory Risk</a></li>';
-    %if %categoryAllowed(credit) %then
-        put '<li><a href="#credit"><i class="fas fa-credit-card"></i>Credit Risk</a></li>';
-    %if %categoryAllowed(operational) %then
-        put '<li><a href="#operational"><i class="fas fa-cogs"></i>Operational Risk</a></li>';
-    %if %categoryAllowed(market) %then
-        put '<li><a href="#market"><i class="fas fa-chart-line"></i>Market Risk</a></li>';
-    %if %categoryAllowed(liquidity) %then
-        put '<li><a href="#liquidity"><i class="fas fa-water"></i>Liquidity Risk</a></li>';
-    %if %categoryAllowed(icaap) %then
-        put '<li><a href="#icaap"><i class="fas fa-balance-scale"></i>ICAAP</a></li>';
-    %if %categoryAllowed(ilaap) %then
-        put '<li><a href="#ilaap"><i class="fas fa-tint"></i>ILAAP</a></li>';
-
+    put '<li><a href="#regulatory"><i class="fas fa-gavel"></i>Regulatory Risk</a></li>';
+    put '<li><a href="#credit"><i class="fas fa-credit-card"></i>Credit Risk</a></li>';
+    put '<li><a href="#operational"><i class="fas fa-cogs"></i>Operational Risk</a></li>';
+    put '<li><a href="#market"><i class="fas fa-chart-line"></i>Market Risk</a></li>';
+    put '<li><a href="#liquidity"><i class="fas fa-water"></i>Liquidity Risk</a></li>';
+    put '<li><a href="#icaap"><i class="fas fa-balance-scale"></i>ICAAP</a></li>';
+    put '<li><a href="#ilaap"><i class="fas fa-tint"></i>ILAAP</a></li>';
     put '<li><a href="#reports"><i class="fas fa-file-alt"></i>Data Extraction</a></li>';
     put '</ul>';
     put '</aside>';

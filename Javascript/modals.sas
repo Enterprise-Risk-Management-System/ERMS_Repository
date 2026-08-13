@@ -35,6 +35,7 @@
     put '  };';
     put '  return themes[type] || { bg: "#f9fafb", text: "#1f2937" };';
     put '}';
+
     put 'function escapeHtml(str) {';
     put '  if (str === null || str === undefined) return "";';
     put '  return String(str)';

@@ -13,6 +13,9 @@
 /* Include all domain configuration modules */
 %include "C:\Users\62917\ERMS\Javascript\routes\riskCategories\index.sas";
 
+/* Risk Appetite Framework (CRO-only section) - added without touching any line above */
+%include "C:\Users\62917\ERMS\Javascript\routes\riskAppetiteFramework\index.sas";
+
 
 %macro Routes;
 
@@ -21,10 +24,13 @@
 	%buildRiskCategories;
 
 	%buildAnalyticsDash;
-	
+
 	%regulatoryReports;
 
 	%Saibor;
+
+	/* Risk Appetite Framework (CRO-only section) - added without touching any line above */
+	%RAF_Routes;
 
 %mend Routes;
 

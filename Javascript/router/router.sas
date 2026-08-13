@@ -11,7 +11,14 @@
     put '  "#risk-categories": getRiskCategoriesHTML,';
     put '  "#analytics": getAnalyticsHTML,';
     put '  "#regulatory-reports": getRegulatoryReportsHTML,';
-    put '  "#saibor-saibid": getSaiborHTML';
+    put '  "#saibor-saibid": getSaiborHTML,';
+    /* Risk Appetite Framework (CRO-only section) - added without touching any key above */
+    put '  "#risk-appetite-framework": getRAFHTML,';
+    /* Pre-existing sidebar links with no registered route until now - see
+       buildUnderProcessPlaceholders.sas for why these are simple placeholders. */
+    put '  "#market": getMarketRiskPlaceholderHTML,';
+    put '  "#credit": getCreditRiskPlaceholderHTML,';
+    put '  "#operational": getOperationalRiskPlaceholderHTML';
     put '};';
     put '// Main routing function';
     put 'function showRoute(route) {';

@@ -13,6 +13,9 @@
 %include "C:\Users\62917\ERMS\config\reportDownload\reportDownload.sas";
 %include "C:\Users\62917\ERMS\config\api\apiEndpoints.sas";
 
+/* Risk Appetite Framework (CRO-only section) - added without touching any line above */
+%include "C:\Users\62917\ERMS\config\riskAppetiteFramework\index.sas";
+
 /* ============================================================================
    Main Macro: Generate All Configurations
    Generates all domain configurations in the correct order
@@ -28,7 +31,10 @@
     %regulatoryReportsConfig;
 
     %reportDownloadMetadata
-    
+
     %apiEndpoints;
-    
+
+    /* Risk Appetite Framework (CRO-only section) - added without touching any line above */
+    %raf_config_new;
+
 %mend erms_config_new;

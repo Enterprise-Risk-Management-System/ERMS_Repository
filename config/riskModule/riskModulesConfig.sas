@@ -2,14 +2,6 @@
 
 %macro riskModulesConfig;
     put 'const riskModulesConfig = Object.freeze([';
-
-    /* Each block below is gated by %categoryAllowed(key), which reads
-       ALLOWED_CATEGORIES set by auth/resolveUserAccess.sas. Trailing commas
-       are kept on every entry (including the last emitted one) - trailing
-       commas are legal in JS array literals, so whichever block ends up
-       last after filtering never produces broken JSON-ish JS. */
-
-    %if %categoryAllowed(regulatory) %then %do;
     put '  {';
     put '    key: "regulatory",';
     put '    title: "Regulatory Risk",';
@@ -21,9 +13,6 @@
     put '      { label: "Compliance", value: "98%" }';
     put '    ]';
     put '  },';
-    %end;
-
-    %if %categoryAllowed(credit) %then %do;
     put '  {';
     put '    key: "credit",';
     put '    title: "Credit Risk",';
@@ -34,9 +23,6 @@
     put '      { label: "PD Rate", value: "2.3%" }';
     put '    ]';
     put '  },';
-    %end;
-
-    %if %categoryAllowed(operational) %then %do;
     put '  {';
     put '    key: "operational",';
     put '    title: "Operational Risk",';
@@ -47,9 +33,6 @@
     put '      { label: "Loss", value: "$2.1M" }';
     put '    ]';
     put '  },';
-    %end;
-
-    %if %categoryAllowed(market) %then %do;
     put '  {';
     put '    key: "market",';
     put '    title: "Market Risk",';
@@ -60,9 +43,6 @@
     put '      { label: "Volatility", value: "12.5%" }';
     put '    ]';
     put '  },';
-    %end;
-
-    %if %categoryAllowed(liquidity) %then %do;
     put '  {';
     put '    key: "liquidity",';
     put '    title: "Liquidity Risk",';
@@ -73,9 +53,6 @@
     put '      { label: "HQLA", value: "$850M" }';
     put '    ]';
     put '  },';
-    %end;
-
-    %if %categoryAllowed(icaap) %then %do;
     put '  {';
     put '    key: "icaap",';
     put '    title: "ICAAP",';
@@ -86,9 +63,6 @@
     put '      { label: "Capital", value: "$2.8B" }';
     put '    ]';
     put '  },';
-    %end;
-
-    %if %categoryAllowed(ilaap) %then %do;
     put '  {';
     put '    key: "ilaap",';
     put '    title: "ILAAP",';
@@ -99,11 +73,6 @@
     put '      { label: "Stable Funding", value: "$1.2B" }';
     put '    ]';
     put '  },';
-    %end;
-
-    /* Always visible - unioned into ALLOWED_CATEGORIES regardless of group,
-       see auth/groupCategoryMapping.sas %alwaysVisibleCategories */
-    %if %categoryAllowed(saibor) %then %do;
     put '  {';
     put '    key: "saibor",';
     put '    title: "SAIBOR",';
@@ -114,8 +83,6 @@
     put '      { label: "SAIBOR", value: "125%" },';
     put '      { label: "SAIBID", value: "$1.2B" }';
     put '    ]';
-    put '  },';
-    %end;
-
+    put '  }';
     put ']);';
 %mend riskModulesConfig;

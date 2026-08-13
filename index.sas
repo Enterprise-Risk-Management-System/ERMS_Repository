@@ -5,12 +5,6 @@
 
 %include "C:\Users\62917\ERMS\config\index.sas";
 
-%include "C:\Users\62917\ERMS\monitoring\index.sas";
-
-%include "C:\Users\62917\ERMS\cache\index.sas";
-
-%include "C:\Users\62917\ERMS\auth\index.sas";
-
 %include "C:\Users\62917\ERMS\components\components.sas";
 
 /*%include "C:\Users\62917\ERMS\Javascript\test.sas";*/

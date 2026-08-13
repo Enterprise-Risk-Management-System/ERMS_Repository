@@ -129,7 +129,7 @@
     put '      showNotification("Dashboard data refreshed successfully", "success");';
     put '    })';
     put '    .catch(function (error) {';
-    put '      ;';
+    put '      hideLoading();';
     put '      showNotification("Error refreshing dashboard data: " + error.message, "error");';
     put '    });';
     put '}';
