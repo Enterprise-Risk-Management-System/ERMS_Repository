@@ -10,7 +10,6 @@
     
     /* Layout Components */
     %generate_navbar_styles;
-    %generate_sidebar_styles;
     %generate_main_content_styles;
     
     /* UI Components */
@@ -67,31 +66,22 @@
 %mend generate_navbar_styles;
 
 /* ============================================================================
-   SIDEBAR STYLES
-   ============================================================================ */
-%macro generate_sidebar_styles;
-    put '.sidebar { position: fixed; left: 0; top: 70px; width: 250px; height: calc(100vh - 70px); background: white;';
-    put '  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); overflow-y: auto; z-index: 999; }';
-    put '.sidebar-menu { padding: 20px 0; }';
-    put '.sidebar-menu li { margin-bottom: 5px; }';
-    put '.sidebar-menu a { display: flex; align-items: center; gap: 12px; padding: 12px 25px; color: #374151; transition: all 0.3s ease; border-left: 3px solid transparent; }';
-    put '.sidebar-menu a:hover { background: #f3f4f6; color: #1f2937; border-left-color: #3b82f6; }';
-    put '.sidebar-menu a.active { background: #eff6ff; color: #1d4ed8; border-left-color: #3b82f6; font-weight: 600; }';
-    put '.sidebar-menu i { width: 20px; text-align: center; }';
-%mend generate_sidebar_styles;
-
-/* ============================================================================
    MAIN CONTENT STYLES
    ============================================================================ */
 %macro generate_main_content_styles;
-    put '.main-content { margin-left: 250px; margin-top: 70px; padding: 30px; }';
+    /* No sidebar - main-content now only clears the fixed navbar (margin-top)
+       and spans the full viewport width, minus breathing-room padding. */
+    put '.main-content { margin-top: 70px; padding: 30px; }';
     put '.page-header { background: white; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }';
     put '.page-title { font-size: 2rem; color: #1f2937; margin-bottom: 10px; font-weight: 600; }';
     put '.page-subtitle { color: #6b7280; font-size: 1.1rem; }';
     put '.breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 0.9rem; color: #6b7280; }';
     put '.breadcrumb a { color: #3b82f6; }';
     put '.breadcrumb a:hover { text-decoration: underline; }';
-    put '.dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px; }';
+    /* Single column - .side-panel is unused today, so this used to reserve an
+       empty 1fr track (~1/3 of the width) next to .main-panel on every route.
+       Full width now that there is nothing to share it with. */
+    put '.dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; }';
     put '.main-panel, .side-panel { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }';
 %mend generate_main_content_styles;
 
@@ -176,12 +166,6 @@
    RESPONSIVE STYLES
    ============================================================================ */
 %macro generate_responsive_styles;
-    put '@media (max-width: 1024px) {';
-    put '  .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }';
-    put '  .sidebar.show { transform: translateX(0); }';
-    put '  .main-content { margin-left: 0; }';
-    put '  .dashboard-grid { grid-template-columns: 1fr; }';
-    put '}';
     put '@media (max-width: 768px) {';
     put '  .nav-menu { display: none; }';
     put '  .risk-modules { grid-template-columns: 1fr; }';

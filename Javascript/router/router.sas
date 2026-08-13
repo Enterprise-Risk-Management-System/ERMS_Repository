@@ -14,7 +14,7 @@
     put '  "#saibor-saibid": getSaiborHTML,';
     /* Risk Appetite Framework (CRO-only section) - added without touching any key above */
     put '  "#risk-appetite-framework": getRAFHTML,';
-    /* Pre-existing sidebar links with no registered route until now - see
+    /* Reached from the navbar's Dashboard dropdown (components.sas) - see
        buildUnderProcessPlaceholders.sas for why these are simple placeholders. */
     put '  "#market": getMarketRiskPlaceholderHTML,';
     put '  "#credit": getCreditRiskPlaceholderHTML,';

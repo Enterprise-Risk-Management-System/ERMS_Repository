@@ -87,8 +87,8 @@
     put '    let html = "";';
     put '    html += ''<div class="trend-block">'';';
     put '    html += ''<svg width="64" height="20" aria-hidden="true">'';';
-    put '    html += ''<line x1="2" y1="10" x2="62" y2="10" stroke="#c3cee0" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/>'';';
-    put '    html += ''<circle cx="2" cy="10" r="2.5" fill="#c3cee0"/><circle cx="32" cy="10" r="2.5" fill="#c3cee0"/><circle cx="62" cy="10" r="2.5" fill="#c3cee0"/>'';';
+    put '    html += ''<line x1="2" y1="10" x2="62" y2="10" stroke="#d1d5db" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/>'';';
+    put '    html += ''<circle cx="2" cy="10" r="2.5" fill="#d1d5db"/><circle cx="32" cy="10" r="2.5" fill="#d1d5db"/><circle cx="62" cy="10" r="2.5" fill="#d1d5db"/>'';';
     put '    html += ''</svg>'';';
     put '    html += ''<span class="trend-caption">No prior period - trend unavailable</span>'';';
     put '    html += ''</div>'';';

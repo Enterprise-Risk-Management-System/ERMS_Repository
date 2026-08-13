@@ -3,15 +3,15 @@
    NEW module - registered as one additional key in ERMS's existing routes
    object (see router.sas), reached via the new "CRO Dashboard" item in the
    navbar's Dashboard dropdown (see components.sas). Renders entirely inside
-   ERMS's own #main-panel, under ERMS's own navbar/sidebar/page-header -
+   ERMS's own #main-panel, under ERMS's own navbar/page-header -
    this file contributes content only, never a second page shell.
 
    INTEGRATION RULES THIS FILE FOLLOWS (see also reportGeneration/riskAppetiteFramework/*):
      1. Every CSS rule is scoped under ".raf-app" so it can never affect
-        ERMS's own navbar/sidebar/buttons/modal, and ERMS's global CSS can
-        never accidentally restyle RAF's content either.
-     2. RAF ships NO navbar/sidebar/loading-spinner/notification-banner/modal
-        of its own - it reuses ERMS's real ones (showLoading(), hideLoading(),
+        ERMS's own navbar/buttons/modal, and ERMS's global CSS can never
+        accidentally restyle RAF's content either.
+     2. RAF ships NO navbar/loading-spinner/notification-banner/modal of its
+        own - it reuses ERMS's real ones (showLoading(), hideLoading(),
         showNotification(), the #reportModal shell) rather than duplicating them.
      3. RAF's internal drill-down (Dashboard -> Domains -> Categories -> Metric
         detail) does NOT use window.location.hash - ERMS's own router only
@@ -22,10 +22,10 @@
         button-able - only the top-level #risk-appetite-framework entry is a
         real URL. Only ERMS's own top-level routes (including this one) use
         the hash.
-     4. RAF keeps its OWN distinct blue palette (navy/brand/sky gradient) -
-        deliberately different from ERMS's blue, so the topbar strip below
-        signals "you have entered a distinct, CRO-scoped tool" rather than
-        blending in as just another ERMS page.
+     4. RAF's palette (see raStyles.sas) is drawn directly from ERMS's own
+        navbar gradient / gray scale / status-badge colors, and the topbar
+        strip below uses that same ERMS blue - it signals "CRO-scoped
+        section" via the badge label alone, not via a different color scheme.
      5. No real access control exists yet (ERMS has no auth/role layer) - the
         "CRO Only" badge in the topbar is a labeling convention, not
         enforcement. Revisit once ERMS gets role-based access.
@@ -132,7 +132,7 @@
     put '  html += ''    <div class="raf-topbar-brand">'';';
     put '  html += ''      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">'';';
     put '  html += ''        <path d="M9 17 L14 9 L18 13 L24 5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'';';
-    put '  html += ''        <circle cx="24" cy="5" r="2.3" fill="#8fd0f7"/>'';';
+    put '  html += ''        <circle cx="24" cy="5" r="2.3" fill="#93c5fd"/>'';';
     put '  html += ''      </svg>'';';
     put '  html += ''      <span>Risk Appetite Framework</span>'';';
     put '  html += ''    </div>'';';
@@ -180,37 +180,64 @@
     put '  html += ''  <div class="filter-note" id="rafFilterNote"></div>'';';
     put '  html += ''</div>'';';
 
-    put '  html += ''<div class="zone-panel"><div class="zone-head"><h3>Critical Risk Indicators</h3></div>'';';
-    put '  html += ''  <div class="zone-body">'';';
+    /* Tab bar - one tab per indicator view, only one panel visible at a time
+       (raf_showTab below) so each gets the full main-panel width instead of
+       all 4 stacking down the page. */
+    put '  html += ''<div class="raf-tabs" role="tablist">'';';
+    put '  html += ''  <button type="button" class="raf-tab active" data-raf-tab="critical" onclick="raf_showTab(&apos;critical&apos;)">Critical Risk Indicators</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap - by Criticality</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap - by Ownership</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="trend" onclick="raf_showTab(&apos;trend&apos;)">Risk Indicator Trend Analysis - by Pillar</button>'';';
+    put '  html += ''</div>'';';
+
+    put '  html += ''<div class="raf-tabpanel active" id="raf-tabpanel-critical">'';';
+    put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
     put '  html += ''    <p class="zone-desc">Top indicators marked for the CRO dashboard. Each card shows the Reporting Date vs. Value across the last 3 periods. Click a card to open its full metric detail.</p>'';';
     put '  html += ''    <div class="ind-grid">'' + RAFDashboardView.renderCriticalIndicators() + ''</div>'';';
     put '  html += ''  </div></div>'';';
+    put '  html += ''</div>'';';
 
-    put '  html += ''<div class="zone-panel"><div class="zone-head"><h3>Risk Indicator Heatmap - by Criticality</h3></div>'';';
-    put '  html += ''  <div class="zone-body">'';';
+    put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-heatmap">'';';
+    put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
     put '  html += ''    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level, over the last 4 reporting periods.</p>'';';
     put '  html += filterBarHtml("raf-heatmap-table");';
     put '  html += ''    <div style="overflow-x:auto;">'' + RAFDashboardView.renderHeatmapByCriticality().replace(''<table class="heatmap-table">'', ''<table class="heatmap-table" id="raf-heatmap-table">'') + ''</div>'';';
     put '  html += ''    <div style="margin-top:10px; text-align:right;"><button class="btn" onclick="exportTableToExcel(&apos;raf-heatmap-table&apos;,&apos;Heatmap by Criticality&apos;,&apos;RAF_Heatmap&apos;)">Export to Excel</button></div>'';';
     put '  html += ''  </div></div>'';';
+    put '  html += ''</div>'';';
 
-    put '  html += ''<div class="zone-panel"><div class="zone-head"><h3>Risk Indicator Treemap - by Ownership</h3>'';';
-    put '  html += ''  <div class="zone-select"><label for="rafOwner">Ownership</label>'';';
-    put '  html += ''    <select id="rafOwner" onchange="raf_updateTreemapOwner(this)">'';';
+    put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-treemap">'';';
+    put '  html += ''  <div class="zone-panel">'';';
+    put '  html += ''    <div class="zone-toolbar"><div class="zone-select"><label for="rafOwner">Ownership</label>'';';
+    put '  html += ''      <select id="rafOwner" onchange="raf_updateTreemapOwner(this)">'';';
     put '  html += croDashboardConfig.ownershipOptions.map(o => ''<option>'' + escapeHtml(o) + ''</option>'').join("");';
-    put '  html += ''    </select>'';';
-    put '  html += ''  </div></div>'';';
-    put '  html += ''  <div class="zone-body">'';';
-    put '  html += ''    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones for the selected owner, across the last 4 reporting periods.</p>'';';
-    put '  html += ''    <div id="rafTreemapZoneBody">'' + RAFDashboardView.renderTreemapByOwnership(croDashboardConfig.ownershipOptions[0]) + ''</div>'';';
-    put '  html += ''  </div></div>'';';
+    put '  html += ''      </select>'';';
+    put '  html += ''    </div></div>'';';
+    put '  html += ''    <div class="zone-body">'';';
+    put '  html += ''      <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones for the selected owner, across the last 4 reporting periods.</p>'';';
+    put '  html += ''      <div id="rafTreemapZoneBody">'' + RAFDashboardView.renderTreemapByOwnership(croDashboardConfig.ownershipOptions[0]) + ''</div>'';';
+    put '  html += ''    </div>'';';
+    put '  html += ''  </div>'';';
+    put '  html += ''</div>'';';
 
-    put '  html += ''<div class="zone-panel"><div class="zone-head"><h3>Risk Indicator Trend Analysis - by Pillar</h3></div>'';';
-    put '  html += ''  <div class="zone-body">'';';
+    put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-trend">'';';
+    put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
     put '  html += ''    <p class="zone-desc">Count of indicators in Watch or Breach (Amber + Red), Pillar 1 vs. Pillar 2, over the last 4 reporting periods.</p>'';';
     put '  html += RAFDashboardView.renderTrendByPillar();';
     put '  html += ''  </div></div>'';';
+    put '  html += ''</div>'';';
     put '  return html;';
+    put '}';
+
+    put '// Switches the CRO Dashboard tab (Critical Indicators / Heatmap / Treemap / Trend) -';
+    put '// pure show/hide over already-rendered panels, no re-fetch or re-render.';
+    put 'function raf_showTab(tabKey) {';
+    put '  document.querySelectorAll(".raf-tab").forEach(function (el) {';
+    put '    el.classList.toggle("active", el.getAttribute("data-raf-tab") === tabKey);';
+    put '  });';
+    put '  document.querySelectorAll(".raf-tabpanel").forEach(function (el) {';
+    put '    el.classList.toggle("active", el.id === "raf-tabpanel-" + tabKey);';
+    put '  });';
     put '}';
 
     put 'function raf_updateFilterNote() {';

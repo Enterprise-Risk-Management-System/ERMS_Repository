@@ -1,12 +1,22 @@
 /* ============================================================================
    RAF SCOPED STYLES + ICON SPRITE (ERMS-embedded)
    Every single selector below is written as ".raf-app ..." so these rules
-   can never affect ERMS's own navbar/sidebar/buttons/modal, and ERMS's own
-   global CSS can never restyle RAF's content either - see the integration
-   rules in buildRAF.sas's file header. Written as one JS template literal
-   (backtick string) so the CSS can be emitted as plain lines with no per-
-   line quote-escaping - a backtick has no special meaning to SAS, unlike a
-   single or double quote.
+   can never affect ERMS's own navbar/buttons/modal, and ERMS's own global
+   CSS can never restyle RAF's content either - see the integration rules in
+   buildRAF.sas's file header. Written as one JS template literal (backtick
+   string) so the CSS can be emitted as plain lines with no per-line quote-
+   escaping - a backtick has no special meaning to SAS, unlike a single or
+   double quote.
+
+   PALETTE: every token below is taken directly from ERMS's own design
+   language (Styles/css.sas's navbar gradient, module color chips and
+   status-badge colors; the Tailwind gray scale ERMS already uses for text/
+   borders/surfaces) rather than a separate RAF palette, so the CRO Dashboard
+   reads as part of ERMS instead of a visually distinct tool bolted on. The
+   .raf-app wrapper itself no longer paints its own background/border/shadow
+   either - it renders flush inside ERMS's existing #main-panel card, the
+   same way every other route (Dashboard, Risk Categories, Analytics, ...)
+   already does.
 
    Injected inline as part of getRAFHTML()'s returned HTML (re-injected,
    harmlessly, on every visit to the route - the old copy is discarded along
@@ -16,43 +26,45 @@
 %macro generate_raf_styles;
     put 'const RAF_STYLE_BLOCK = `<style>';
     put '.raf-app {';
-    put '  --page:        #eef2f8;';
+    put '  --page:        #f8fafc;';
     put '  --surface-1:   #ffffff;';
-    put '  --surface-2:   #f2f5fb;';
-    put '  --border:      #dbe3f0;';
-    put '  --text-1:      #172338;';
-    put '  --text-2:      #4c5b76;';
-    put '  --text-3:      #66718a;';
-    put '  --brand:       #2b6cb0;';
-    put '  --brand-2:     #2f7fd6;';
-    put '  --brand-tint:  #eaf2fd;';
-    put '  --steel:       #2f8fd1;';
-    put '  --steel-tint:  #eaf6fc;';
-    put '  --navy:        #12365e;';
-    put '  --sky:         #4fa3e3;';
-    put '  --series-2:    #5b4fc4;';
-    put '  --good:          #0ca30c;';
-    put '  --good-tint:     #e4f6e0;';
-    put '  --warning:       #c98500;';
-    put '  --warning-tint:  #fdf1da;';
-    put '  --serious:       #d1592f;';
-    put '  --serious-tint:  #fbe9e0;';
-    put '  --critical:      #b3261e;';
-    put '  --critical-tint: #f8dfdd;';
-    put '  display: block; background: var(--page); color: var(--text-1);';
-    put '  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;';
-    put '  border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.05);';
-    put '  margin-bottom: 20px;';
+    put '  --surface-2:   #f9fafb;';
+    put '  --border:      #e5e7eb;';
+    put '  --text-1:      #1f2937;';
+    put '  --text-2:      #6b7280;';
+    put '  --text-3:      #9ca3af;';
+    put '  --brand:       #1e3a8a;';
+    put '  --brand-2:     #3b82f6;';
+    put '  --brand-tint:  #eff6ff;';
+    put '  --steel:       #0891b2;';
+    put '  --steel-tint:  #ecfeff;';
+    put '  --navy:        #1e3a8a;';
+    put '  --sky:         #93c5fd;';
+    put '  --series-2:    #7c3aed;';
+    put '  --good:          #166534;';
+    put '  --good-tint:     #dcfce7;';
+    put '  --warning:       #92400e;';
+    put '  --warning-tint:  #fef3c7;';
+    put '  --serious:       #c2410c;';
+    put '  --serious-tint:  #ffedd5;';
+    put '  --critical:      #991b1b;';
+    put '  --critical-tint: #fee2e2;';
+    put '  display: block; color: var(--text-1);';
+    put '  font-family: "Inter", "Arial", sans-serif;';
     put '}';
     put '.raf-app * { box-sizing: border-box; }';
     put '.raf-app a { text-decoration: none; color: inherit; }';
 
-    put '.raf-app .raf-topbar { background: linear-gradient(120deg, var(--navy) 0%, var(--brand) 45%, var(--sky) 100%);';
-    put '  padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; }';
+    put '.raf-app .raf-topbar { background: linear-gradient(135deg, var(--navy) 0%, var(--brand-2) 100%);';
+    put '  padding: 14px 22px; display: flex; align-items: center; justify-content: space-between;';
+    put '  border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05); margin-bottom: 20px; }';
     put '.raf-app .raf-topbar-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; font-size: 1.05rem; letter-spacing: -.01em; }';
     put '.raf-app .raf-cro-badge { background: rgba(255,255,255,.18); color: #fff; font-size: .68rem; font-weight: 700;';
     put '  letter-spacing: .06em; text-transform: uppercase; padding: 4px 11px; border-radius: 20px; border: 1px solid rgba(255,255,255,.35); }';
-    put '.raf-app .raf-body { padding: 22px; }';
+    /* No horizontal/bottom padding - RAF content sits flush inside ERMS's own
+       #main-panel (which already provides 30px padding), same as every other
+       route's content, instead of ERMS's card wrapping a second inset card. */
+    put '.raf-app .raf-body { padding: 0; }';
 
     put '.raf-app .crumb { font-size: .8rem; color: var(--text-3); margin-bottom: 10px; }';
     put '.raf-app .crumb b { color: var(--navy); font-weight: 700; cursor: pointer; }';
@@ -85,16 +97,28 @@
     put '.raf-app .note-line:last-child { margin-bottom: 0; }';
     put '.raf-app .note-line b { color: var(--text-1); }';
 
-    put '.raf-app .zone-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;';
-    put '  margin-bottom: 18px; box-shadow: 0 4px 15px rgba(18,58,99,.06); overflow: hidden; }';
-    put '.raf-app .zone-head { background: var(--brand); color: #fff; padding: 11px 18px; display: flex;';
-    put '  justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }';
-    put '.raf-app .zone-head h3 { font-size: .96rem; font-weight: 800; }';
+    /* Tab bar - replaces the 4 stacked zone panels. Same underline-on-active
+       idiom as ERMS's own .nav-menu a::after hover underline (css.sas), so
+       switching sections here looks like the same interaction pattern as the
+       rest of the app, not a new one. Only the active tab's panel is shown,
+       so each zone gets the full main-panel width to itself instead of the
+       4 zones competing for vertical scroll space. */
+    put '.raf-app .raf-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 2px solid var(--border); margin-bottom: 18px; }';
+    put '.raf-app .raf-tab { background: none; border: none; font-family: inherit; font-size: .84rem; font-weight: 700;';
+    put '  color: var(--text-2); padding: 12px 18px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color .2s, border-color .2s; }';
+    put '.raf-app .raf-tab:hover { color: var(--brand-2); }';
+    put '.raf-app .raf-tab.active { color: var(--brand); border-bottom-color: var(--brand-2); }';
+    put '.raf-app .raf-tabpanel { display: none; }';
+    put '.raf-app .raf-tabpanel.active { display: block; }';
+
+    put '.raf-app .zone-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;';
+    put '  margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.05); overflow: hidden; }';
+    put '.raf-app .zone-toolbar { background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 10px 18px;';
+    put '  display: flex; justify-content: flex-end; align-items: center; gap: 10px; }';
     put '.raf-app .zone-body { padding: 16px 18px 18px; }';
     put '.raf-app .zone-desc { font-size: .8rem; color: var(--text-2); margin-bottom: 14px; }';
     put '.raf-app .zone-select { display: flex; align-items: center; gap: 8px; }';
-    put '.raf-app .zone-select label { font-size: .7rem; color: rgba(255,255,255,.85); font-weight: 700; }';
-    put '.raf-app .zone-select select { background: #fff; border: none; }';
+    put '.raf-app .zone-select label { font-size: .72rem; color: var(--text-2); font-weight: 700; }';
 
     put '.raf-app .ind-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }';
     put '.raf-app .ind-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 12px;';
@@ -132,7 +156,10 @@
     put '  border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--text-1); }';
     put '.raf-app .table-filter-count { font-size: .74rem; color: var(--text-3); }';
 
-    put '.raf-app .treemap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; }';
+    /* auto-fit rather than a fixed 2 columns - now that this tab has the full
+       main-panel width to itself, all 4 periods can sit in one row on wide
+       screens instead of always wrapping to a 2x2 grid. */
+    put '.raf-app .treemap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 14px; }';
     put '.raf-app .treemap-date { display: inline-block; background: var(--brand); color: #fff; font-size: .66rem; font-weight: 700;';
     put '  padding: 3px 9px; border-radius: 6px 6px 0 0; }';
     put '.raf-app .treemap-rect { display: flex; gap: 2px; height: 120px; background: var(--surface-2); border-radius: 0 8px 8px 8px; overflow: hidden; }';
@@ -145,7 +172,11 @@
     put '.raf-app .trend-legend { display: flex; gap: 16px; margin-bottom: 8px; font-size: .76rem; color: var(--text-2); font-weight: 600; }';
     put '.raf-app .trend-legend span { display: flex; align-items: center; gap: 6px; }';
     put '.raf-app .trend-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }';
+    /* Fluid SVG - the chart keeps its logical 560x210 coordinate system via
+       viewBox but stretches to fill the tab's full width instead of sitting
+       at a fixed 560px inside a much wider panel. */
     put '.raf-app .trend-chart-wrap { overflow-x: auto; }';
+    put '.raf-app .trend-chart-wrap svg { width: 100%; height: auto; display: block; }';
 
     put '.raf-app .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 14px; }';
     put '.raf-app .domain-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 14px;';

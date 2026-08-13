@@ -152,7 +152,7 @@
     put '    + "xmlns:x=\"urn:schemas-microsoft-com:office:excel\" "';
     put '    + "xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">"';
     put '    + "<Styles><Style ss:ID=\"sHeader\"><Font ss:Bold=\"1\" ss:Color=\"#FFFFFF\"/>"';
-    put '    + "<Interior ss:Color=\"#2B6CB0\" ss:Pattern=\"Solid\"/></Style></Styles>"';
+    put '    + "<Interior ss:Color=\"#1E3A8A\" ss:Pattern=\"Solid\"/></Style></Styles>"';
     put '    + worksheetsXml';
     put '    + "</Workbook>";';
     put '  var blob = new Blob([doc], { type: "application/vnd.ms-excel" });';

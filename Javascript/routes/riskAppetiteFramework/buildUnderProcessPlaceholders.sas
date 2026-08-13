@@ -1,12 +1,9 @@
 /* ============================================================================
    ROUTE BUILDERS: Under-process placeholders for Market Risk / Credit Risk /
-   Operational Risk (ERMS routes #market / #credit / #operational).
-   These 3 hashes were already referenced by the existing sidebar
-   (components.sas) but were never registered in router.sas's routes object,
-   so clicking them today shows "Page Not Found". Registering them here is a
-   small, additive fix to that pre-existing gap - not new scope invented for
-   the Risk Appetite Framework - each one just shows a clean "Under process"
-   notice until ERMS's own team builds the real page.
+   Operational Risk (ERMS routes #market / #credit / #operational), reached
+   from the navbar's Dashboard dropdown (see components.sas). Each one just
+   shows a clean "Under process" notice until ERMS's own team builds the
+   real page.
    ============================================================================ */
 %macro buildUnderProcessPlaceholders;
     put 'function raf_buildUnderProcessHTML(title) {';

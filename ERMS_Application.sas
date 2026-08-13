@@ -13,7 +13,6 @@
         %generate_loading;
         %generate_notification;
         %generate_navbar;
-        %generate_sidebar;
 
         /* Generate Main Content */
         put '<main class="main-content">';
