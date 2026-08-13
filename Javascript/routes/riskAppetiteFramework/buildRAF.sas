@@ -182,12 +182,20 @@
 
     /* Tab bar - one tab per indicator view, only one panel visible at a time
        (raf_showTab below) so each gets the full main-panel width instead of
-       all 4 stacking down the page. */
+       all 4 stacking down the page. "Risk Domains" is a 5th tab in the same
+       bar, but unlike the other 4 it isn't a same-page show/hide panel - it
+       is a multi-level drill-down (Domains -> Risk Categories -> Metric
+       detail, see buildRafDomainsHTML/buildRafCategoriesHTML/
+       buildRafCategoryDetailHTML below), so clicking it hands off to
+       RAFRouting.showDomains() (a full #raf-main-panel navigation, already
+       built - the breadcrumb it renders links "CRO Dashboard" back to
+       RAFRouting.showDashboard(), which rebuilds this tab bar fresh). */
     put '  html += ''<div class="raf-tabs" role="tablist">'';';
     put '  html += ''  <button type="button" class="raf-tab active" data-raf-tab="critical" onclick="raf_showTab(&apos;critical&apos;)">Critical Risk Indicators</button>'';';
     put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap - by Criticality</button>'';';
     put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap - by Ownership</button>'';';
     put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="trend" onclick="raf_showTab(&apos;trend&apos;)">Risk Indicator Trend Analysis - by Pillar</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab" onclick="RAFRouting.showDomains()">Risk Domains &rarr;</button>'';';
     put '  html += ''</div>'';';
 
     put '  html += ''<div class="raf-tabpanel active" id="raf-tabpanel-critical">'';';
