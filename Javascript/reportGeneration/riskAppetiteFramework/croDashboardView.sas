@@ -1,52 +1,48 @@
 /* ============================================================================
    RAF CRO DASHBOARD VIEW MODULE
-   Renders the CRO Dashboard's 4 zones from croDashboardConfig.sas: Critical
-   Risk Indicators (Zone 1), Heatmap by Criticality (Zone 2), Treemap by
-   Ownership (Zone 3), Trend Analysis by Pillar (Zone 4). Kept separate from
-   the route builder (buildCroDashboard.sas), which only assembles the
-   filter bar + zone shells - this file renders the data-driven parts,
-   mirroring the reference app's separation between a route builder and its
-   results view.
+   Renders the CRO Dashboard's zones from croDashboardConfig.sas: Heatmap by
+   Criticality (Zone 2), Treemap by Ownership (Zone 3), Trend Analysis by
+   Pillar (Zone 4). (Critical Risk Indicators / Zone 1 has been removed -
+   not currently required; see buildRAF.sas/croDashboardConfig.sas/
+   rafDashboardAggregates.sas for the matching removal. Zone numbering below
+   is left as-is/2-3-4 to match those other files rather than renumbered.)
+   Kept separate from the route builder (buildCroDashboard.sas), which only
+   assembles the filter bar + zone shells - this file renders the
+   data-driven parts, mirroring the reference app's separation between a
+   route builder and its results view.
    ============================================================================ */
 %macro generate_cro_dashboard_view;
     put '// RAF CRO Dashboard View Module';
     put 'const RAFDashboardView = {';
 
-    put '  // Zone 1: one card per featured indicator, each a Reporting-Date/Value table';
-    put '  renderCriticalIndicators() {';
-    put '    return croDashboardConfig.criticalIndicators.map(ind => {';
-    put '      let html = ''<div class="ind-card" onclick="RAFRouting.showRoute(&apos;#category/'' + ind.category + ''&apos;)">'';';
-    put '      html += ''<span class="ind-label">Risk Area</span><span class="ind-value">'' + escapeHtml(ind.riskArea) + ''</span>'';';
-    put '      html += ''<span class="ind-label">Risk Indicator</span><span class="ind-value">'' + escapeHtml(ind.indicator) + ''</span>'';';
-    put '      html += ''<table class="ind-table"><thead><tr><th>Reporting Date</th><th>Value</th></tr></thead><tbody>'';';
-    put '      ind.history.forEach(h => {';
-    put '        const cls = RAF_STATUS_CSS_CLASS[h.status] === "critical" ? "critical" : (RAF_STATUS_CSS_CLASS[h.status] === "warning" ? "warning" : "good");';
-    put '        html += ''<tr><td>'' + RAFUtils.formatDate(h.date) + ''</td><td><span class="rag-pill '' + cls + ''">'' + escapeHtml(h.value) + ''</span></td></tr>'';';
-    put '      });';
-    put '      html += ''</tbody></table></div>'';';
-    put '      return html;';
-    put '    }).join("");';
-    put '  },';
-
-    put '  // Zone 2: criticality x period heatmap table, with a thumbs up/down trend icon';
+    /* Zone 2: criticality x period heatmap - ONE row per criticality level,
+       with each period''s Green/Amber/Red as its own 3-column group running
+       left-to-right, instead of one row per criticality/period pair. A
+       3-row table with the periods spread out horizontally uses the panel''s
+       full width properly (was a tall, narrow list before); the single flat
+       header row (rather than a rowspan/colspan header) keeps every column
+       lining up 1-for-1 with the body rows, so the existing generic
+       filterBarHtml()/applyTableFilter()/exportTableToExcel() tooling (see
+       dashboardTableTools.sas), which matches by counting <thead th>/<tbody
+       tr> cells, keeps working unchanged. Drops the per-cell trend glyph -
+       it referenced ic-thumb-up/ic-thumb-down symbols that were never
+       actually defined anywhere, so it never rendered; comparing periods is
+       now done by eye directly across the row instead. */
     put '  renderHeatmapByCriticality() {';
-    put '    let html = ''<table class="heatmap-table"><thead><tr>'';';
-    put '    html += ''<th>Criticality</th><th>Date</th><th class="num">Green</th><th class="num">Amber</th><th class="num">Red</th><th class="num">Trend</th>'';';
+    put '    const periods = (croDashboardConfig.heatmapByCriticality[0] || {}).periods || [];';
+    put '    let html = ''<table class="heatmap-table"><thead><tr><th>Criticality</th>'';';
+    put '    periods.forEach(p => {';
+    put '      const d = RAFUtils.formatDate(p.date);';
+    put '      html += ''<th class="num good">'' + d + '' Green</th><th class="num warning">'' + d + '' Amber</th><th class="num critical">'' + d + '' Red</th>'';';
+    put '    });';
     put '    html += ''</tr></thead><tbody>'';';
     put '    croDashboardConfig.heatmapByCriticality.forEach(row => {';
-    put '      row.periods.forEach((p, idx) => {';
-    put '        html += "<tr>";';
-    put '        if (idx === 0) {';
-    put '          html += ''<td class="crit-cell" rowspan="'' + row.periods.length + ''">'' + escapeHtml(row.criticality)';
-    put '            + ''<br/><span style="font-weight:400;font-size:.68rem;">'' + row.totalIndicators + '' indicators</span></td>'';';
-    put '        }';
-    put '        const trendIcon = p.trend === "up" ? "ic-thumb-up" : "ic-thumb-down";';
-    put '        const trendCls = p.trend === "up" ? "up" : "down";';
-    put '        html += ''<td>'' + RAFUtils.formatDate(p.date) + ''</td>'';';
+    put '      html += ''<tr><td class="crit-cell">'' + escapeHtml(row.criticality)';
+    put '        + ''<br/><span style="font-weight:400;font-size:.68rem;">'' + row.totalIndicators + '' indicators</span></td>'';';
+    put '      row.periods.forEach(p => {';
     put '        html += ''<td class="num good">'' + p.good + ''</td><td class="num warning">'' + p.watch + ''</td><td class="num critical">'' + p.breach + ''</td>'';';
-    put '        html += ''<td class="num"><svg class="trend-icon '' + trendCls + ''"><use href="#'' + trendIcon + ''"/></svg></td>'';';
-    put '        html += "</tr>";';
     put '      });';
+    put '      html += "</tr>";';
     put '    });';
     put '    html += "</tbody></table>";';
     put '    return html;';

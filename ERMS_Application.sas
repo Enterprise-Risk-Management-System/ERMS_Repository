@@ -2,6 +2,14 @@
     /* Initialize configuration */
     %erms_config;
 
+    /* Risk Appetite Framework: read RAF_Q2_2026.xlsx and build the work.raf_*
+       datasets riskDomainsConfig.sas / riskCategoriesConfig.sas /
+       appetiteMetricsConfig.sas loop over below - added without touching any
+       line above. Must run here, as its own top-level step, BEFORE the
+       data _null_ step starts: PROC IMPORT and plain DATA steps can't be
+       nested inside a running DATA step - see rafDataLoader.sas. */
+    %raf_load_excel_data;
+
     /* Start HTML output */
     data _null_;
         file _webout;

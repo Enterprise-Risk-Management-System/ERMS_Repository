@@ -81,7 +81,15 @@
     put '  showDashboard() {';
     put '    this.render(buildRafDashboardHTML());';
     put '    RAFUI.renderBreadcrumb([{ label: "CRO Dashboard" }]);';
-    put '    RAFUI.setTitle("CRO Risk Appetite Dashboard", "15 risk areas - 64 indicators tracked against Board-approved appetite limits.");';
+    /* Risk-area/indicator counts read straight off the loaded config
+       instead of being hardcoded, so this line never drifts from the sheet
+       (same "don''t hardcode what''s derivable" principle applied elsewhere
+       in RAF - see rafDataLoader.sas). */
+    put '    const totalIndicators = Object.values(appetiteMetricsConfig).reduce((sum, arr) => sum + arr.length, 0);';
+    /* "CRO Dashboard" (matches the breadcrumb label just above), not "Risk
+       Appetite Framework" - that text now belongs solely to the shared
+       shell header set once in getRAFHTML(), so it isn''t shown twice. */
+    put '    RAFUI.setTitle("CRO Dashboard", riskCategoriesConfig.length + " risk areas - " + totalIndicators + " indicators tracked against Board-approved appetite limits.");';
     put '    raf_updateFilterNote();';
     put '  },';
     put '  showDomains() {';
@@ -90,7 +98,8 @@
     put '      { label: "CRO Dashboard", onClick: "RAFRouting.showDashboard()" },';
     put '      { label: "Risk Domains" }';
     put '    ]);';
-    put '    RAFUI.setTitle("Risk Domains", "15 risk areas grouped into 4 domains - 64 indicators - Q2-2026. Choose a domain to see its risk areas.");';
+    put '    const domTotalIndicators = Object.values(appetiteMetricsConfig).reduce((sum, arr) => sum + arr.length, 0);';
+    put '    RAFUI.setTitle("Risk Domains", riskCategoriesConfig.length + " risk areas grouped into " + riskDomainsConfig.length + " domains - " + domTotalIndicators + " indicators - Q2-2026. Choose a domain to see its risk areas.");';
     put '  },';
     put '  showDomain(domainKey) {';
     put '    this.currentDomain = domainKey;';
@@ -125,6 +134,18 @@
     /* ---- Entry point: registered in ERMS's routes object as #risk-appetite-framework ---- */
     put '// Entry point for the ERMS route #risk-appetite-framework';
     put 'function getRAFHTML() {';
+    /* Shared shell header (components.sas) is retitled here so it reads
+       "Risk Appetite Framework" while on this route instead of its default
+       "Risk Management Dashboard" - router.sas's updateContent() resets it
+       back to the default before every route render, so leaving RAF for
+       another route un-stales it automatically; nothing else about that
+       shared header (breadcrumb, subtitle) changes. This is also now the
+       ONLY place "Risk Appetite Framework" appears - the topbar brand text
+       below and the CRO Dashboard sub-view''s own in-page title (see
+       RAFRouting.showDashboard()) were the duplicates and have been
+       removed/reworded accordingly. */
+    put '  var shellTitleEl = document.getElementById("page-title");';
+    put '  if (shellTitleEl) shellTitleEl.textContent = "Risk Appetite Framework";';
     put '  let html = RAF_STYLE_BLOCK;';
     put '  html += RAF_ICON_DEFS;';
     put '  html += ''<div class="raf-app">'';';
@@ -134,7 +155,6 @@
     put '  html += ''        <path d="M9 17 L14 9 L18 13 L24 5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'';';
     put '  html += ''        <circle cx="24" cy="5" r="2.3" fill="#93c5fd"/>'';';
     put '  html += ''      </svg>'';';
-    put '  html += ''      <span>Risk Appetite Framework</span>'';';
     put '  html += ''    </div>'';';
     put '  html += ''    <span class="raf-cro-badge">CRO Only</span>'';';
     put '  html += ''  </div>'';';
@@ -190,24 +210,20 @@
        RAFRouting.showDomains() (a full #raf-main-panel navigation, already
        built - the breadcrumb it renders links "CRO Dashboard" back to
        RAFRouting.showDashboard(), which rebuilds this tab bar fresh). */
+    /* "Critical Risk Indicators" tab/zone removed - not currently required
+       (see croDashboardConfig.sas/croDashboardView.sas/
+       rafDashboardAggregates.sas for the matching removal). Heatmap is now
+       the first/default-active tab. */
     put '  html += ''<div class="raf-tabs" role="tablist">'';';
-    put '  html += ''  <button type="button" class="raf-tab active" data-raf-tab="critical" onclick="raf_showTab(&apos;critical&apos;)">Critical Risk Indicators</button>'';';
-    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap - by Criticality</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab active" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap - by Criticality</button>'';';
     put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap - by Ownership</button>'';';
     put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="trend" onclick="raf_showTab(&apos;trend&apos;)">Risk Indicator Trend Analysis - by Pillar</button>'';';
     put '  html += ''  <button type="button" class="raf-tab" onclick="RAFRouting.showDomains()">Risk Domains &rarr;</button>'';';
     put '  html += ''</div>'';';
 
-    put '  html += ''<div class="raf-tabpanel active" id="raf-tabpanel-critical">'';';
+    put '  html += ''<div class="raf-tabpanel active" id="raf-tabpanel-heatmap">'';';
     put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
-    put '  html += ''    <p class="zone-desc">Top indicators marked for the CRO dashboard. Each card shows the Reporting Date vs. Value across the last 3 periods. Click a card to open its full metric detail.</p>'';';
-    put '  html += ''    <div class="ind-grid">'' + RAFDashboardView.renderCriticalIndicators() + ''</div>'';';
-    put '  html += ''  </div></div>'';';
-    put '  html += ''</div>'';';
-
-    put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-heatmap">'';';
-    put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
-    put '  html += ''    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level, over the last 4 reporting periods.</p>'';';
+    put '  html += ''    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>'';';
     put '  html += filterBarHtml("raf-heatmap-table");';
     put '  html += ''    <div style="overflow-x:auto;">'' + RAFDashboardView.renderHeatmapByCriticality().replace(''<table class="heatmap-table">'', ''<table class="heatmap-table" id="raf-heatmap-table">'') + ''</div>'';';
     put '  html += ''    <div style="margin-top:10px; text-align:right;"><button class="btn" onclick="exportTableToExcel(&apos;raf-heatmap-table&apos;,&apos;Heatmap by Criticality&apos;,&apos;RAF_Heatmap&apos;)">Export to Excel</button></div>'';';
@@ -222,7 +238,7 @@
     put '  html += ''      </select>'';';
     put '  html += ''    </div></div>'';';
     put '  html += ''    <div class="zone-body">'';';
-    put '  html += ''      <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones for the selected owner, across the last 4 reporting periods.</p>'';';
+    put '  html += ''      <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones for the selected owner. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>'';';
     put '  html += ''      <div id="rafTreemapZoneBody">'' + RAFDashboardView.renderTreemapByOwnership(croDashboardConfig.ownershipOptions[0]) + ''</div>'';';
     put '  html += ''    </div>'';';
     put '  html += ''  </div>'';';
@@ -230,7 +246,7 @@
 
     put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-trend">'';';
     put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
-    put '  html += ''    <p class="zone-desc">Count of indicators in Watch or Breach (Amber + Red), Pillar 1 vs. Pillar 2, over the last 4 reporting periods.</p>'';';
+    put '  html += ''    <p class="zone-desc">Count of indicators in Watch or Breach (Amber + Red), Pillar 1 vs. Pillar 2 (sheet Comments = P1/P2). The 2026-06-30 point is live from the sheet; earlier points are placeholders pending a historical data connection.</p>'';';
     put '  html += RAFDashboardView.renderTrendByPillar();';
     put '  html += ''  </div></div>'';';
     put '  html += ''</div>'';';
@@ -265,12 +281,13 @@
     put '  if (body) body.innerHTML = RAFDashboardView.renderTreemapByOwnership(select.value);';
     put '}';
 
-    /* ---- Risk Domains (4 grouping cards) ---- */
+    /* ---- Risk Domains (grouping cards) ---- */
     put 'function buildRafDomainsHTML() {';
     put '  let html = ''<div class="domain-grid">'';';
     put '  riskDomainsConfig.forEach(domain => {';
-    put '    const counts = domain.ragSplitPlaceholder;';
-    put '    const total = counts.good + counts.watch + counts.breach + counts.regulatoryBreach;';
+    put '    const metrics = domain.categories.flatMap(key => appetiteMetricsConfig[key] || []);';
+    put '    const counts = RAFStatus.rollUpStatusCounts(metrics);';
+    put '    const total = counts.green + counts.amber + counts.red;';
     put '    const pct = n => total ? ((n / total) * 100).toFixed(1) : 0;';
     put '    const indicatorCount = domain.categories.reduce((sum, key) => {';
     put '      const cat = riskCategoriesConfig.find(c => c.key === key);';
@@ -283,13 +300,12 @@
     put '    html += ''  </div>'';';
     put '    html += ''  <div class="domain-desc">'' + escapeHtml(domain.description) + ''</div>'';';
     put '    html += ''  <div class="domain-split">'';';
-    put '    html += ''    <span style="width:'' + pct(counts.good) + ''%; background:var(--good)"></span>'';';
-    put '    html += ''    <span style="width:'' + pct(counts.watch) + ''%; background:var(--warning)"></span>'';';
-    put '    html += ''    <span style="width:'' + pct(counts.breach) + ''%; background:var(--serious)"></span>'';';
-    put '    html += ''    <span style="width:'' + pct(counts.regulatoryBreach) + ''%; background:var(--critical)"></span>'';';
+    put '    html += ''    <span style="width:'' + pct(counts.green) + ''%; background:var(--good)"></span>'';';
+    put '    html += ''    <span style="width:'' + pct(counts.amber) + ''%; background:var(--warning)"></span>'';';
+    put '    html += ''    <span style="width:'' + pct(counts.red) + ''%; background:var(--critical)"></span>'';';
     put '    html += ''  </div>'';';
-    put '    html += ''  <div class="domain-split-caption">'' + counts.good + '' within appetite - '' + counts.watch + '' watch - ''';
-    put '      + counts.breach + '' breach - '' + counts.regulatoryBreach + '' regulatory breach</div>'';';
+    put '    html += ''  <div class="domain-split-caption">'' + counts.green + '' within tolerance - '' + counts.amber + '' watch - ''';
+    put '      + counts.red + '' breach</div>'';';
     put '    html += ''  <div class="domain-foot"><span class="domain-link">Explore &rarr;</span></div>'';';
     put '    html += ''</div>'';';
     put '  });';
@@ -302,24 +318,22 @@
     put '  const categories = riskCategoriesConfig.filter(c => c.domain === domainKey);';
     put '  let html = ''<div class="tiles">'';';
     put '  categories.forEach(cat => {';
-    put '    const counts = cat.ragSplitPlaceholder;';
-    put '    const total = counts.good + counts.watch + counts.breach + counts.regulatoryBreach;';
+    put '    const counts = RAFStatus.rollUpStatusCounts(appetiteMetricsConfig[cat.key] || []);';
+    put '    const total = counts.green + counts.amber + counts.red;';
     put '    const pct = n => total ? ((n / total) * 100).toFixed(1) : 0;';
     put '    const parts = [];';
-    put '    if (counts.good) parts.push(counts.good + " within appetite");';
-    put '    if (counts.watch) parts.push(counts.watch + " watch");';
-    put '    if (counts.breach) parts.push(counts.breach + " breach");';
-    put '    if (counts.regulatoryBreach) parts.push(counts.regulatoryBreach + " regulatory breach");';
+    put '    if (counts.green) parts.push(counts.green + " within tolerance");';
+    put '    if (counts.amber) parts.push(counts.amber + " watch");';
+    put '    if (counts.red) parts.push(counts.red + " breach");';
     put '    html += ''<div class="tile" onclick="RAFRouting.showCategory(&apos;'' + cat.key + ''&apos;)">'';';
     put '    html += ''  <div class="tile-head"><div class="tile-icon">'' + cat.icon + ''</div>'';';
     put '    html += ''    <div><div class="tile-title">'' + escapeHtml(cat.title) + ''</div>'';';
     put '    html += ''    <div class="tile-count">'' + cat.indicatorCount + '' indicators</div></div></div>'';';
     put '    html += ''  <div class="tile-desc">'' + escapeHtml(cat.description) + ''</div>'';';
     put '    html += ''  <div class="tile-split">'';';
-    put '    html += ''    <span style="width:'' + pct(counts.good) + ''%; background:var(--good)"></span>'';';
-    put '    html += ''    <span style="width:'' + pct(counts.watch) + ''%; background:var(--warning)"></span>'';';
-    put '    html += ''    <span style="width:'' + pct(counts.breach) + ''%; background:var(--serious)"></span>'';';
-    put '    html += ''    <span style="width:'' + pct(counts.regulatoryBreach) + ''%; background:var(--critical)"></span>'';';
+    put '    html += ''    <span style="width:'' + pct(counts.green) + ''%; background:var(--good)"></span>'';';
+    put '    html += ''    <span style="width:'' + pct(counts.amber) + ''%; background:var(--warning)"></span>'';';
+    put '    html += ''    <span style="width:'' + pct(counts.red) + ''%; background:var(--critical)"></span>'';';
     put '    html += ''  </div>'';';
     put '    html += ''  <div class="tile-split-caption">'' + parts.join(" - ") + ''</div>'';';
     put '    html += ''  <div class="tile-foot"><span class="tile-owner">'' + escapeHtml(cat.owner) + ''</span><span class="tile-freq">'' + escapeHtml(cat.frequency) + ''</span></div>'';';
@@ -349,7 +363,11 @@
     put '  html += ''      <button class="btn ghost" onclick="RAFReports.viewHistory(&apos;'' + categoryKey + ''&apos;)">View History ('' + historyCount + '')</button>'';';
     put '  html += ''    </div>'';';
     put '  html += ''  </div>'';';
-    put '  html += ''  <div class="direction-note">Lower is better - placeholder direction, applies to all bands below</div>'';';
+    /* No blanket "lower is better" banner any more - direction is read per
+       metric straight off its own sheet cells (see rafDataLoader.sas) and
+       can legitimately differ within the same Risk Area, so each metric's
+       own meter-scale labels (with their own sign) are the source of
+       truth instead of a single banner over the whole category. */
     put '  html += ''  <div id="raf-metric-cards-'' + categoryKey + ''">'';';
     put '  html += metrics.map(m => RAFResults.renderMetricCard(m)).join("");';
     put '  html += ''  </div>'';';
@@ -374,6 +392,22 @@
     put 'function raf_closeDashboardDropdown() {';
     put '  const menu = document.getElementById("rafDashboardDropdownMenu");';
     put '  if (menu) menu.style.display = "none";';
+    put '  raf_closeCroSubmenu();';
+    put '}';
+    /* "CRO Dashboard" submenu flyout (see components.sas generate_navbar) -
+       same click-to-toggle idiom as the top-level dropdown above, just one
+       level deeper. Closing the top-level dropdown always closes this too
+       (see raf_closeDashboardDropdown), so the existing outside-click/
+       Escape listeners below need no changes to cover it. */
+    put 'function raf_toggleCroSubmenu(event) {';
+    put '  if (event) event.stopPropagation();';
+    put '  const sub = document.getElementById("rafCroSubmenuMenu");';
+    put '  if (!sub) return;';
+    put '  sub.style.display = (sub.style.display === "block") ? "none" : "block";';
+    put '}';
+    put 'function raf_closeCroSubmenu() {';
+    put '  const sub = document.getElementById("rafCroSubmenuMenu");';
+    put '  if (sub) sub.style.display = "none";';
     put '}';
     put 'document.addEventListener("click", function (e) {';
     put '  const wrap = document.getElementById("rafDashboardDropdown");';

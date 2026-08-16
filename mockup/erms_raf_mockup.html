@@ -1,0 +1,1657 @@
+<title>ERMS Risk Appetite Framework</title>
+<!--
+  MOCKUP NOTES (read this before treating pixel-for-pixel output as gospel):
+
+  This file is a byte-faithful reconstruction of what ERMS_Application.sas
+  actually emits once %raf_load_excel_data has run against the real
+  RAF_Q2_2026.xlsx - every CSS rule below is copied verbatim from
+  Styles/css.sas and Javascript/routes/riskAppetiteFramework/raStyles.sas,
+  every HTML element from components.sas, and every JS function from the
+  RAF module files, in the exact order ERMS_Application.sas calls them.
+
+  Four deliberate deviations from a 1:1 SAS run, all flagged inline where
+  they happen:
+    1. riskDomainsConfig / riskCategoriesConfig / appetiteMetricsConfig /
+       croDashboardConfig below are NOT hand-typed - they are the actual
+       output of the parsing/classification/aggregation algorithms in
+       rafDataLoader.sas + rafDashboardAggregates.sas, run in Python
+       against your real RAF_Q2_2026.xlsx (I cannot execute SAS here).
+       Every value, status and pointer position you see for the Risk
+       Domain section is real, not illustrative; for the CRO Dashboard's
+       Heatmap/Treemap/Trend zones, the NEWEST period (2026-06-30) is
+       real, and the 3 older "prior period" columns are that same real
+       current count copied forward - see the comment at each spot in
+       croDashboardConfig below and in rafDashboardAggregates.sas for why
+       (the sheet has exactly one reporting period) and where the future
+       backend swap-in point is.
+    2. The external Tableau <script> tag and Font Awesome stylesheet link
+       are omitted/left commented, exactly as they already are (commented
+       out) in config/config.sas - so this stays fully self-contained and
+       matches the real app's current behaviour (the <i class="fas fa-*">
+       icon slots render empty in the real app today too, for the same
+       reason).
+    3. The router's default landing route is set to the Risk Appetite
+       Framework instead of the plain #dashboard placeholder, so this
+       opens straight on what you asked to review. Everything else about
+       the routing (including the navbar dropdown) is unchanged.
+    4. Navbar: "CRO Dashboard" is now a flyout submenu trigger with one
+       child item, "RAF - Risk Appetite Framework", which is what actually
+       navigates to the RAF route (same #risk-appetite-framework target as
+       before). The RAF page's own header now reads "Risk Appetite
+       Framework" instead of "Risk Management Dashboard"/"CRO Risk
+       Appetite Dashboard".
+
+  Critical Risk Indicators (the old first tab/zone) has been removed
+  entirely, per request - not currently required. Heatmap by Criticality is
+  now the first/default-active tab; nothing else in the tab bar, routing or
+  data pipeline changed.
+
+  Every OTHER ERMS route (#dashboard, #risk-categories, #analytics,
+  #regulatory-reports, #saibor-saibid) is outside the scope of this change
+  and is NOT reproduced - each shows a labelled "not part of this preview"
+  placeholder instead of a fabricated dashboard, so nothing here is
+  invented. #risk-appetite-framework and the #market/#credit/#operational
+  placeholders reached from the Dashboard dropdown are the real code.
+-->
+<style>
+/* ============================================================================
+   BASE STYLES  (Styles/css.sas: generate_base_styles)
+   ============================================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "Inter", "Arial", sans-serif; background: #f8fafc; overflow-x: hidden; }
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+/* ============================================================================
+   NAVBAR STYLES  (generate_navbar_styles)
+   ============================================================================ */
+.navbar { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); position: fixed; top: 0; left: 0; right: 0; z-index: 1000; }
+.nav-container { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
+.nav-brand { display: flex; align-items: center; gap: 15px; color: white; }
+.nav-brand h1 { font-size: 1.5rem; font-weight: 600; }
+.nav-brand .logo { background: rgba(255, 255, 255, 0.2); padding: 8px 12px; border-radius: 8px; }
+.nav-menu { display: flex; gap: 30px; }
+.nav-menu a { color: white; padding: 20px 0; display: block; font-weight: 500; transition: all 0.3s ease; position: relative; }
+.nav-menu a:hover { color: #93c5fd; }
+.nav-menu a::after { content: ""; position: absolute; bottom: 0; left: 0; width: 0; height: 3px; background: #93c5fd; transition: width 0.3s ease; }
+.nav-menu a:hover::after { width: 100%; }
+.nav-user { display: flex; align-items: center; gap: 15px; color: white; }
+.user-avatar { width: 35px; height: 35px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; }
+.user-info { display: flex; flex-direction: column; }
+.user-name { font-weight: 600; font-size: 0.9rem; }
+.user-role { font-size: 0.8rem; opacity: 0.8; }
+
+/* ============================================================================
+   MAIN CONTENT STYLES  (generate_main_content_styles)
+   ============================================================================ */
+.main-content { margin-top: 70px; padding: 30px; }
+.page-header { background: white; border-radius: 12px; padding: 30px; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
+.page-title { font-size: 2rem; color: #1f2937; margin-bottom: 10px; font-weight: 600; }
+.page-subtitle { color: #6b7280; font-size: 1.1rem; }
+.breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 0.9rem; color: #6b7280; }
+.breadcrumb a { color: #3b82f6; }
+.breadcrumb a:hover { text-decoration: underline; }
+.dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; }
+.main-panel, .side-panel { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); }
+
+/* ============================================================================
+   CARD STYLES  (generate_card_styles)
+   ============================================================================ */
+.quick-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px; }
+.stat-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); border-left: 4px solid #3b82f6; }
+.stat-card.positive { border-left-color: #10b981; }
+.stat-card.warning { border-left-color: #f59e0b; }
+.stat-card.danger { border-left-color: #ef4444; }
+.stat-number { font-size: 2rem; font-weight: 700; color: #1f2937; margin-bottom: 5px; }
+.stat-text { color: #6b7280; font-size: 0.9rem; }
+
+/* ============================================================================
+   RISK MODULE STYLES  (generate_risk_module_styles)
+   ============================================================================ */
+.risk-modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.risk-module { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 2px solid transparent; transition: all 0.3s ease; cursor: pointer; position: relative; overflow: hidden; }
+.risk-module:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); border-color: #3b82f6; }
+.module-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+.module-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; }
+.module-title { font-size: 1.2rem; font-weight: 600; color: #1f2937; }
+.module-description { color: #6b7280; font-size: 0.9rem; line-height: 1.5; margin-bottom: 20px; }
+.module-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.stat-item { text-align: center; padding: 15px; background: #f9fafb; border-radius: 8px; }
+.stat-value { font-size: 1.3rem; font-weight: 700; color: #1f2937; margin-bottom: 5px; }
+.stat-label { font-size: 0.8rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+.regulatory { background: linear-gradient(135deg, #dc2626, #ef4444); }
+.credit { background: linear-gradient(135deg, #059669, #10b981); }
+.operational { background: linear-gradient(135deg, #0891b2, #06b6d4); }
+.market { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
+.liquidity { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+.icaap { background: linear-gradient(135deg, #059669, #34d399); }
+.ilaap { background: linear-gradient(135deg, #ec4899, #f472b6); }
+.saibor { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+
+/* ============================================================================
+   MODAL STYLES  (generate_modal_styles)
+   ============================================================================ */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; justify-content: center; align-items: center; }
+.modal.show { display: flex; }
+.modal-content { background: white; border-radius: 20px; padding: 30px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e5e7eb; }
+.modal-title { font-size: 1.5rem; font-weight: 600; color: #1f2937; }
+.modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #6b7280; transition: color 0.3s ease; }
+.modal-close:hover { color: #1f2937; }
+
+/* ============================================================================
+   NOTIFICATION STYLES  (generate_notification_styles)
+   ============================================================================ */
+.notification { position: fixed; top: 20px; right: 20px; color: white; padding: 15px 20px; border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); transform: translateX(400px); transition: transform 0.3s ease; z-index: 2001; display: flex; align-items: center; gap: 10px; }
+.notification.success { background: linear-gradient(135deg, #059669, #10b981); }
+.notification.error { background: linear-gradient(135deg, #dc2626, #ef4444); }
+.notification.warning { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.notification.show { transform: translateX(0); }
+
+/* ============================================================================
+   BUTTON STYLES  (generate_button_styles)
+   ============================================================================ */
+.btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.3s ease; }
+.btn-primary { background: #3b82f6; color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-secondary { background: #6b7280; color: white; }
+.btn-secondary:hover { background: #4b5563; }
+
+/* ============================================================================
+   RESPONSIVE STYLES  (generate_responsive_styles)
+   ============================================================================ */
+@media (max-width: 768px) {
+  .nav-menu { display: none; }
+  .risk-modules { grid-template-columns: 1fr; }
+  .quick-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ============================================================================
+   ANIMATION STYLES  (generate_animation_styles)
+   ============================================================================ */
+.loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; justify-content: center; align-items: center; }
+.spinner { width: 50px; height: 50px; border: 4px solid rgba(255, 255, 255, 0.3); border-top: 4px solid #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* ============================================================================
+   DASHBOARD TABLE STYLES  (generate_dashboard_table_styles)
+   ============================================================================ */
+.dashboard-table-container { overflow-x: auto; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); }
+.dashboard-table { width: 100%; border-collapse: collapse; background: white; font-size: 0.9rem; }
+.dashboard-table th { background: #f8fafc; padding: 15px 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; }
+.dashboard-table td { padding: 12px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+.dashboard-table tr:hover { background: #f9fafb; }
+.status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+.status-badge.compliant { background: #dcfce7; color: #166534; }
+.status-badge.warning { background: #fef3c7; color: #92400e; }
+.status-badge.danger { background: #fee2e2; color: #991b1b; }
+.btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+/* Not-in-scope route placeholder (mockup-only helper class - not from css.sas,
+   used only by the honest "outside this preview's scope" stand-ins below) */
+.mockup-scope-note { border: 1.5px dashed #d1d5db; border-radius: 10px; padding: 18px 20px; color: #6b7280; font-size: .88rem; background: #f9fafb; }
+</style>
+
+<div class="loading" id="loading"><div class="spinner"></div></div>
+<div class="notification" id="notification"><i class="fas fa-check-circle"></i><span id="notification-text">Report generated successfully!</span></div>
+
+<!-- NAVBAR (components.sas's generate_navbar - the version with the Dashboard
+     dropdown wins in the real app too, since components.sas is %include'd
+     after Styles/css.sas, and a later %macro definition of the same name
+     replaces the earlier one in the SAS macro catalog) -->
+<nav class="navbar">
+<div class="nav-container">
+<a href="#" class="nav-brand">
+<div class="logo"><i class="fas fa-shield-alt"></i></div>
+<h1>ERMS</h1>
+</a>
+<ul class="nav-menu">
+<li style="position:relative;" id="rafDashboardDropdown">
+<a onclick="raf_toggleDashboardDropdown(event); return false;" style="display:flex; align-items:center; gap:6px; cursor:pointer;">Dashboard <i class="fas fa-caret-down" style="font-size:.75em;"></i></a>
+<ul id="rafDashboardDropdownMenu" style="display:none; position:absolute; top:100%; left:0; background:#ffffff; min-width:190px; border-radius:8px; box-shadow:0 12px 28px rgba(0,0,0,.18); padding:6px; margin-top:10px; z-index:1100;">
+<li style="position:relative;" id="rafCroDashboardSubmenu">
+<a onclick="raf_toggleCroSubmenu(event); return false;" style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem; cursor:pointer;">CRO Dashboard <i class="fas fa-caret-right" style="font-size:.7em;"></i></a>
+<ul id="rafCroSubmenuMenu" style="display:none; position:absolute; top:0; left:100%; background:#ffffff; min-width:220px; border-radius:8px; box-shadow:0 12px 28px rgba(0,0,0,.18); padding:6px; margin-left:6px; z-index:1200;">
+<li><a onclick="raf_closeDashboardDropdown(); showRoute('#risk-appetite-framework'); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem; white-space:nowrap;">RAF - Risk Appetite Framework</a></li>
+</ul>
+</li>
+<li><a onclick="raf_closeDashboardDropdown(); showRoute('#market'); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Market Risk</a></li>
+<li><a onclick="raf_closeDashboardDropdown(); showRoute('#credit'); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Credit Risk</a></li>
+<li><a onclick="raf_closeDashboardDropdown(); showRoute('#operational'); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Operational Risk</a></li>
+</ul>
+</li>
+<li><a href='#risk-categories' onclick='showRoute("#risk-categories"); return false;'>Risk Category</a></li>
+<li><a href='#analytics' onclick='showRoute("#analytics"); return false;'>Analytics</a></li>
+</ul>
+<div class="nav-user">
+<div class="user-avatar"><i class="fas fa-user"></i></div>
+<div class="user-info">
+<div class='user-name'>&amp;sysuserid</div>
+</div>
+</div>
+</div>
+</nav>
+
+<main class="main-content">
+<div class="page-header">
+<div class="breadcrumb">
+<a href="#dashboard">Dashboard</a>
+<i class="fas fa-chevron-right"></i>
+<span>Risk Management</span>
+</div>
+<h1 class="page-title" id="page-title">Risk Management Dashboard</h1>
+<p class="page-subtitle">Comprehensive overview of enterprise risk metrics and compliance status</p>
+</div>
+
+<div class="modal" id="reportModal">
+<div class="modal-content">
+<div class="modal-header">
+<h3 class="modal-title" id="modalTitle">Report Details</h3>
+<button class="modal-close" onclick="closeModal()">&times;</button>
+</div>
+<div id="modalBody"></div>
+</div>
+</div>
+
+<div class="dashboard-grid">
+<div id="main-panel" class="main-panel">
+<!-- Content will be loaded dynamically by JavaScript -->
+</div>
+</div>
+</main>
+
+<script>
+/* ============================================================================
+   generate_javascript_modal  (Javascript/modals.sas)
+   ============================================================================ */
+function showModalMessage(payload) {
+  var modal = document.getElementById("reportModal");
+  console.log(modal);
+  var modalTitle = document.getElementById("modalTitle");
+  var modalBody = document.getElementById("modalBody");
+  if (!modal || !modalTitle || !modalBody) {
+    console.error("Modal elements not found in DOM");
+    return;
+  };
+  var title = payload && payload.title ? payload.title : "Notification";
+  var message = payload && payload.message ? payload.message : "No message provided.";
+  var type = payload && payload.type ? payload.type : "info";
+  modalTitle.textContent = title;
+  var theme = getModalTheme(type);
+  var html = "<div style=\"background:" + theme.bg + "; color:" + theme.text + "; padding:15px; border-radius:8px; text-align:left;\">";
+  html += "<div style=\"font-size:1rem; font-weight:600; margin-bottom:8px;\">" + escapeHtml(message) + "</div>";
+  html += "</div>";
+  modalBody.innerHTML = html;
+  modal.classList.add("show");
+}
+function getModalTheme(type) {
+  var themes = {
+    error: { bg: "#fee2e2", text: "#b91c1c" },
+    warning: { bg: "#fef3c7", text: "#92400e" },
+    success: { bg: "#d1fae5", text: "#065f46" },
+    info: { bg: "#e0f2fe", text: "#0369a1" }
+  };
+  return themes[type] || { bg: "#f9fafb", text: "#1f2937" };
+}
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+function closeModal() {
+  var modal = document.getElementById("reportModal");
+  if (modal) modal.classList.remove("show");
+}
+var modalEl = document.getElementById("reportModal");
+if (modalEl) {
+  modalEl.addEventListener("click", function(e) {
+    if (e.target === this) {
+      closeModal();
+    }
+  });
+}
+
+/* ============================================================================
+   %erms_config_new -> %raf_config_new
+   riskDomainsConfig / riskCategoriesConfig / appetiteMetricsConfig below are
+   the REAL output of rafDataLoader.sas's parsing + classification algorithm,
+   run against your actual RAF_Q2_2026.xlsx (via an equivalent Python pass,
+   since there is no SAS interpreter available in this environment) - see the
+   note at the top of this file. croDashboardConfig is untouched, illustrative
+   placeholder data exactly as it exists in croDashboardConfig.sas today.
+   ============================================================================ */
+
+const riskDomainsConfig = Object.freeze([
+  { key: "financial", title: "Financial Risks", description: "Capital adequacy, concentration, credit, liquidity, market and earnings - the core balance-sheet risk domains.", icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2.3 10 L12 4 L21.7 10 Z\"/><line x1=\"3\" y1=\"21\" x2=\"21\" y2=\"21\"/><line x1=\"4.5\" y1=\"21\" x2=\"4.5\" y2=\"10.5\"/><line x1=\"9.5\" y1=\"21\" x2=\"9.5\" y2=\"10.5\"/><line x1=\"14.5\" y1=\"21\" x2=\"14.5\" y2=\"10.5\"/><line x1=\"19.5\" y1=\"21\" x2=\"19.5\" y2=\"10.5\"/></svg>", route: "#domain/financial", categories: ["capital","concentration-risk","credit-risk","earnings-and-financial-performance","interest-rate-in-the-banking-book-irrbb","interetst-rate-in-the-banking-book-irrbb","liquidity-risk","market-risk"] },
+  { key: "nonfinancial", title: "Non-Financial Risks", description: "Operational, fraud, cyber, legal and model risk - how well bank processes and controls hold up.", icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"4.3\"/><line x1=\"12\" y1=\"2.5\" x2=\"12\" y2=\"5.3\"/><line x1=\"12\" y1=\"18.7\" x2=\"12\" y2=\"21.5\"/><line x1=\"2.5\" y1=\"12\" x2=\"5.3\" y2=\"12\"/><line x1=\"18.7\" y1=\"12\" x2=\"21.5\" y2=\"12\"/><line x1=\"5.4\" y1=\"5.4\" x2=\"7.4\" y2=\"7.4\"/><line x1=\"16.6\" y1=\"16.6\" x2=\"18.6\" y2=\"18.6\"/><line x1=\"5.4\" y1=\"18.6\" x2=\"7.4\" y2=\"16.6\"/><line x1=\"16.6\" y1=\"7.4\" x2=\"18.6\" y2=\"5.4\"/></svg>", route: "#domain/nonfinancial", categories: ["cyber-security-risk","fraud-risk","legal-risk","model-risk","operational-risk"] },
+  { key: "peopleconduct", title: "People, Conduct & Reputational Risk", description: "Workforce, conduct and reputational indicators - how the bank is run and how it is perceived.", icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"10\" cy=\"8\" r=\"4\"/><path d=\"M2.5 20.5 C2.5 16.4 6.1 13.5 10.5 13.5 C14.9 13.5 18.5 16.4 18.5 20.5\"/><path d=\"M18 2.5 L18.9 4.3 L20.9 4.6 L19.4 6 L19.8 8 L18 7 L16.2 8 L16.6 6 L15.1 4.6 L17.1 4.3 Z\"/></svg>", route: "#domain/peopleconduct", categories: ["people-and-conduct-risk","reputational-risk"] },
+  { key: "shariah", title: "Shariah & Compliance Risk", description: "Sharia non-compliance exposure across Islamic banking activities.", icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14.5 3 A9 9 0 1 0 14.5 21 A7.2 7.2 0 1 1 14.5 3 Z\"/></svg>", route: "#domain/shariah", categories: ["shariah-risk"] }
+]);
+
+const riskCategoriesConfig = Object.freeze([
+  { key: "capital", title: "Capital", domain: "financial", description: "Risk indicators from the Capital risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='8' width='18' height='12' rx='2'/><path d='M7 8 V6 a5 5 0 0 1 10 0 v2'/><circle cx='12' cy='14' r='1.5'/></svg>", route: "#category/capital", indicatorCount: 5, owner: "RMG", committee: "RMC", frequency: "Quarterly" },
+  { key: "concentration-risk", title: "Concentration Risk", domain: "financial", description: "Risk indicators from the Concentration Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='4'/></svg>", route: "#category/concentration-risk", indicatorCount: 10, owner: "Credit", committee: "RMC, SCC", frequency: "Quarterly" },
+  { key: "credit-risk", title: "Credit Risk", domain: "financial", description: "Risk indicators from the Credit Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 19 L9 11 L13 15 L20 5'/><path d='M15 5 L20 5 L20 10'/></svg>", route: "#category/credit-risk", indicatorCount: 12, owner: "Credit, Credit Risk", committee: "ECL Committee", frequency: "Quarterly" },
+  { key: "cyber-security-risk", title: "Cyber Security Risk", domain: "nonfinancial", description: "Risk indicators from the Cyber Security Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2.5 L20 5.5 L20 11 C20 16.5 16.5 20.5 12 22 C7.5 20.5 4 16.5 4 11 L4 5.5 Z'/><circle cx='12' cy='11.5' r='2'/><line x1='12' y1='13.5' x2='12' y2='16'/></svg>", route: "#category/cyber-security-risk", indicatorCount: 1, owner: "Cyber Risk Department", committee: "RMC, Cyber SC", frequency: "Quarterly" },
+  { key: "earnings-and-financial-performance", title: "Earnings and financial performance", domain: "financial", description: "Risk indicators from the Earnings and financial performance risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><line x1='2' y1='21' x2='22' y2='21'/><rect x='4' y='14' width='3.4' height='7' rx='0.6'/><rect x='10.3' y='9' width='3.4' height='12' rx='0.6'/><rect x='16.6' y='4' width='3.4' height='17' rx='0.6'/></svg>", route: "#category/earnings-and-financial-performance", indicatorCount: 3, owner: "Finance and Planning", committee: "RMC", frequency: "Quarterly" },
+  { key: "fraud-risk", title: "Fraud Risk", domain: "nonfinancial", description: "Risk indicators from the Fraud Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='4' y='3' width='12' height='16' rx='1.5'/><line x1='7' y1='7' x2='13' y2='7'/><line x1='7' y1='10.5' x2='13' y2='10.5'/><circle cx='16.5' cy='16.5' r='3.2'/><line x1='18.8' y1='18.8' x2='21' y2='21'/></svg>", route: "#category/fraud-risk", indicatorCount: 1, owner: "Fraud Risk Department", committee: "RMC, CFGC", frequency: "Quarterly" },
+  { key: "interest-rate-in-the-banking-book-irrbb", title: "Interest Rate in the Banking Book (IRRBB)", domain: "financial", description: "Risk indicators from the Interest Rate in the Banking Book (IRRBB) risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12 h4 l2 -7 l4 14 l2 -7 h4'/></svg>", route: "#category/interest-rate-in-the-banking-book-irrbb", indicatorCount: 2, owner: "Market Risk", committee: "RMC/ ALCO", frequency: "Monthly" },
+  { key: "interetst-rate-in-the-banking-book-irrbb", title: "Interetst Rate in the Banking Book (IRRBB)", domain: "financial", description: "Risk indicators from the Interetst Rate in the Banking Book (IRRBB) risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12 h4 l2 -7 l4 14 l2 -7 h4'/></svg>", route: "#category/interetst-rate-in-the-banking-book-irrbb", indicatorCount: 1, owner: "Market Risk", committee: "RMC/ ALCO", frequency: "Monthly" },
+  { key: "legal-risk", title: "Legal Risk", domain: "nonfinancial", description: "Risk indicators from the Legal Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='5' y='2.5' width='14' height='19' rx='1.5'/><line x1='8' y1='7' x2='16' y2='7'/><line x1='8' y1='10.5' x2='16' y2='10.5'/><line x1='8' y1='14' x2='13' y2='14'/><path d='M8.5 18 L10.5 20 L15.5 15'/></svg>", route: "#category/legal-risk", indicatorCount: 1, owner: "Legal Department", committee: "RMC", frequency: "Annually" },
+  { key: "liquidity-risk", title: "Liquidity Risk", domain: "financial", description: "Risk indicators from the Liquidity Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3 C12 3 5.5 11 5.5 15.5 C5.5 19.2 8.4 21.7 12 21.7 C15.6 21.7 18.5 19.2 18.5 15.5 C18.5 11 12 3 12 3 Z'/></svg>", route: "#category/liquidity-risk", indicatorCount: 11, owner: "Market Risk", committee: "RMC/ ALCO", frequency: "Daily, Monthly" },
+  { key: "market-risk", title: "Market Risk", domain: "financial", description: "Risk indicators from the Market Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M3 17 L9 11 L13 14 L21 6'/><path d='M3 21 L21 21'/></svg>", route: "#category/market-risk", indicatorCount: 7, owner: "Market Risk", committee: "ALCO, MRPC", frequency: "Daily" },
+  { key: "model-risk", title: "Model Risk", domain: "nonfinancial", description: "Risk indicators from the Model Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='6' cy='7' r='2'/><circle cx='18' cy='7' r='2'/><circle cx='12' cy='17' r='2'/><line x1='7.7' y1='8.3' x2='10.5' y2='15.3'/><line x1='16.3' y1='8.3' x2='13.5' y2='15.3'/><line x1='8' y1='7' x2='16' y2='7'/></svg>", route: "#category/model-risk", indicatorCount: 1, owner: "Enterprise Risk Management", committee: "RMC", frequency: "Quarterly" },
+  { key: "operational-risk", title: "Operational Risk", domain: "nonfinancial", description: "Risk indicators from the Operational Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12 A8 8 0 0 1 18 6.5'/><path d='M20 12 A8 8 0 0 1 6 17.5'/><path d='M18 3.5 V7 H14.5'/><path d='M6 20.5 V17 H9.5'/></svg>", route: "#category/operational-risk", indicatorCount: 1, owner: "ORMD", committee: "ORC", frequency: "Quarterly" },
+  { key: "people-and-conduct-risk", title: "People and Conduct Risk", domain: "peopleconduct", description: "Risk indicators from the People and Conduct Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='9' r='3.2'/><circle cx='17' cy='10' r='2.6'/><path d='M3 20.5 C3 16.5 6 14 9.5 14 C12 14 14 15.3 15 17.3'/><path d='M14.5 14.5 C16.7 14.5 19 15.9 19.8 18.3'/></svg>", route: "#category/people-and-conduct-risk", indicatorCount: 4, owner: "Human Resources Group", committee: "RMC", frequency: "Quarterly" },
+  { key: "reputational-risk", title: "Reputational Risk", domain: "peopleconduct", description: "Risk indicators from the Reputational Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='9.5' r='5.5'/><path d='M7.2 14.3 L5.5 21.5 L12 18 L18.5 21.5 L16.8 14.3'/></svg>", route: "#category/reputational-risk", indicatorCount: 3, owner: "Finance and Planning, PR & CSR and  Marketing & Customer Experience", committee: "RMC/ ALCO, RMC", frequency: "Quarterly" },
+  { key: "shariah-risk", title: "Shariah Risk", domain: "shariah", description: "Risk indicators from the Shariah Risk risk area.", icon: "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M14.5 3 A9 9 0 1 0 14.5 21 A7.2 7.2 0 1 1 14.5 3 Z'/></svg>", route: "#category/shariah-risk", indicatorCount: 1, owner: "Islamic Banking Division", committee: "RMC", frequency: "Quarterly" }
+]);
+
+const appetiteMetricsConfig = Object.freeze({
+  "capital": [
+    { sNo: 1, id: "total-capital-by-rwa-pillar-1-pillar-2", indicator: "Total Capital by RWA (Pillar 1 + Pillar 2)", definition: "The Total Capital by RWA (or Capital Adequacy Ratio (CAR)) measures the Bank's capital in relation to its total risk-weighted assets.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "RMG", committee: "RMC", comment: "P1", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 2, id: "stressed-car-by-rwa-pillar-1-and-pillar-2", indicator: "Stressed CAR by RWA (Pillar 1 and Pillar 2)", definition: "Stressed CAR by RWA is a capital adequacy measure under stress scenarios. It reflects the Bank’s resilience under moderate stress conditions.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "RMG", committee: "RMC", comment: "P1", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 24, id: "total-capital-by-rwa-pillar1", indicator: "Total Capital by RWA (Pillar1)", definition: "The Total Capital by RWA (Pillar 1) measures the Bank's total capital in relation to its pillar 1 RWA.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "RMG", committee: "RMC", comment: "P1", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 25, id: "cet1-capital-by-rwa-pillar-1", indicator: "CET1 capital by RWA (Pillar 1)", definition: "The Common Equity Tier 1 (CET 1) ratio is a critical component of a bank's capital structure. The CET1 ratio compares the Bank's capital against its pillar 1 RWA", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "RMG", committee: "RMC", comment: "P1", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 3, id: "leverage-ratio", indicator: "Leverage Ratio", definition: "Leverage ratio acts as a supplementary measure to the risk-based capital requirements.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "RMG", committee: "RMC", comment: "P1", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "concentration-risk": [
+    { sNo: 26, id: "unsecured-exposure-concentration-ratio", indicator: "Unsecured Exposure Concentration Ratio", definition: "This ratio helps monitor concentration risk arising from the unsecured exposures.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "RMC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 27, id: "industry-concentration-ratio-wholesale-overall", indicator: "Industry Concentration Ratio – Wholesale (Overall)", definition: "This metric helps identify and manage risk arising from overexposure to specific industries that may be vulnerable to cyclical, regulatory, or macroeconomic shocks.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "SCC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 28, id: "top-20-borrower-exposure-concentration-ratio", indicator: "Top 20 Borrower Exposure Concentration Ratio", definition: "This metric helps identify and manage concentration risk arising from top 20 major borrower exposures.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "SCC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 4, id: "single-group-counterparty-concentration-ratio", indicator: "Single / (Group) Counterparty Concentration Ratio", definition: "This ratio helps monitor concentration risk arising from the single counterparty (other than individual, or sole proprietorship).", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Credit", committee: "RMC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 5, id: "single-related-counterparty-concentration-ratio", indicator: "Single Related Counterparty Concentration Ratio", definition: "This ratio helps monitor concentration risk arising from the individual, or sole proprietorship or partnerships.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Credit", committee: "RMC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 53, id: "top-5-borrower-exposure-concentration-ratio", indicator: "Top 5 Borrower Exposure Concentration Ratio", definition: "This metric helps identify and manage concentration risk arising from top 5 major group exposures.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Credit", committee: "SCC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 54, id: "top-10-borrower-exposure-concentration-ratio", indicator: "Top 10 Borrower Exposure Concentration Ratio", definition: "This metric helps identify and manage concentration risk arising from top 10 major group exposures.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Credit", committee: "SCC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 6, id: "financial-subsidiary-counterparty-concentration-ratio", indicator: "Financial Subsidiary Counterparty Concentration Ratio", definition: "This ratio helps monitor concentration risk arising from the banking counterparty.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Credit", committee: "RMC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 7, id: "cumulative-related-counterparty-concentration-ratio", indicator: "Cumulative Related Counterparty Concentration Ratio", definition: "This ratio helps monitor concentration risk arising from the aggregated interconnected counterparty.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Credit", committee: "RMC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 8, id: "large-exposure-concentration-ratio", indicator: "Large Exposure Concentration Ratio", definition: "This ratio helps monitor concentration risk arising from the large exposures.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Credit", committee: "RMC", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "credit-risk": [
+    { sNo: 10, id: "npl-coverage-ratio", indicator: "NPL Coverage Ratio", definition: "NPL Coverage Ratio indicates the extent of funds ANB has kept aside from its profits to cover loan losses.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 29, id: "non-performing-loans-npl-ratio-wholesale", indicator: "Non- Performing Loans (NPL) Ratio - Wholesale", definition: "The NPL Ratio – Wholesale indicates the asset quality and credit risk specific to the wholesale lending activities across the Bank.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 30, id: "non-performing-loans-npl-ratio-retail", indicator: "Non- Performing Loans (NPL) Ratio - Retail", definition: "The NPL Ratio – Retail indicates the asset quality and credit risk specific to the retail lending activities across the Bank.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 31, id: "non-performing-loans-npl-ratio-sme", indicator: "Non- Performing Loans (NPL) Ratio - SME", definition: "The NPL Ratio – SME indicates the asset quality and credit risk specific to the SME lending activities across the Bank.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 32, id: "watchlist-exposure-ratio", indicator: "Watchlist exposure Ratio", definition: "The Watchlist Exposure Ratio measures the proportion of ANB’s total credit exposures that are classified under the internal watchlist category.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 33, id: "minimum-general-provision-coverage-ratio-for-stage-1-and-2", indicator: "Minimum General Provision Coverage Ratio (for Stage 1 and 2)", definition: "Minimum General Provision Coverage Ratio ensures that the Bank maintains a minimum buffer to absorb potential losses from exposures that have not yet defaulted", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 34, id: "stage-2-exposures-ratio-total", indicator: "Stage 2 exposures Ratio – Total", definition: "It indicates the % of exposures that have experienced a significant increase in credit risk but are not yet credit impaired.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 35, id: "retail-exposures-ratio-total", indicator: "Retail exposures Ratio – Total", definition: "Retail exposure ratio measures the bank’s total credit exposures classified as retail against the total gross exposure of the Bank.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 55, id: "provision-coverage-ratio-stage-1", indicator: "Provision Coverage Ratio (Stage 1)", definition: "Provision Coverage Ratio (Stage 1) reflects the Bank’s prudence in provisioning for potential future losses on low-risk assets", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 56, id: "provision-coverage-ratio-stage-2", indicator: "Provision Coverage Ratio (Stage 2)", definition: "Provision Coverage Ratio (Stage 2) reflects the Bank’s preparedness to absorb potential losses from higher risk performing assets", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 57, id: "provision-coverage-ratio-stage-3", indicator: "Provision Coverage Ratio (Stage 3)", definition: "Provision Coverage Ratio (Stage 3) reflects the bank’s ability to absorb losses from defaulted or severely deteriorated assets", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Credit", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 9, id: "non-performing-loans-npl-ratio-total", indicator: "Non- Performing Loans (NPL) Ratio - Total", definition: "The NPL Ratio – Total indicates the overall asset quality and credit risk exposure across the Bank.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Credit Risk", committee: "ECL Committee", comment: "ICAAP", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "cyber-security-risk": [
+    { sNo: 36, id: "cyber-security-loss-ratio", indicator: "Cyber Security Loss Ratio", definition: "The cyber security loss ratio metric reflects the financial impact of cybersecurity incidents within the broader operational risk framework.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Cyber Risk Department", committee: "RMC, Cyber SC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "earnings-and-financial-performance": [
+    { sNo: 11, id: "return-on-equity-roe-annualised", indicator: "Return on Equity (ROE) (Annualised)", definition: "ROE is a financial ratio that measures the performance of the Bank based on its average shareholders' equity outstanding.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Finance and Planning", committee: "RMC", comment: "F&P", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 37, id: "cost-to-income-ratio-cir", indicator: "Cost-to-Income ratio (CIR)", definition: "Cost-to-Income Ratio is a financial metric that measures the operational efficiency of the Bank.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Finance and Planning", committee: "RMC", comment: "F&P", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 58, id: "return-on-assets-annualized-roa", indicator: "Return on Assets (Annualized) (ROA)", definition: "ROA indicates how efficiently the Bank is using its assets to generate net income.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Finance and Planning", committee: "RMC", comment: "F&P", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "fraud-risk": [
+    { sNo: 12, id: "fraud-risk-losses-to-revenue-ratio", indicator: "Fraud Risk Losses to Revenue Ratio", definition: "The fraud risk losses to revenue reflects the financial impact of fraud risk on the bank’s earnings and helps monitor the effectiveness of fraud prevention and detection controls.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Fraud Risk Department", committee: "RMC, CFGC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "interest-rate-in-the-banking-book-irrbb": [
+    { sNo: 13, id: "economic-value-of-equity-eve", indicator: "Economic Value of Equity (EVE)", definition: "The IRRBB exposure measured by EvE under the defined ANB and regulatory interest rate stress scenarios should comply with SAMA requirements and ALCO MATs.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 1", owner: "Market Risk", committee: "RMC/ ALCO", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 14, id: "earnings-at-risk", indicator: "Earnings at Risk", definition: "The IRRBB exposure net of non-term liabilities measured by EaR under +/- 100 bps shifts in yield curves should comply with ALCO MATs.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 1", owner: "Market Risk", committee: "RMC/ ALCO", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "interetst-rate-in-the-banking-book-irrbb": [
+    { sNo: 38, id: "reverse-cumulative-repricing-gaps", indicator: "Reverse cumulative repricing gaps", definition: "The re-pricing gap exposures, both consolidated and those denominated in non-SAR currencies, should comply with the limits defined by the", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 2A", owner: "Market Risk", committee: "RMC/ ALCO", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "legal-risk": [
+    { sNo: 39, id: "legal-risk-capital-percentage", indicator: "Legal Risk Capital percentage", definition: "The legal risk capital percentage metric measures the proportion of capital charge maintained for legal risk relative to the bank’s CET1 capital.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Annually", criticality: "Level 2A", owner: "Legal Department", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "liquidity-risk": [
+    { sNo: 15, id: "liquidity-coverage-ratio-lcr", indicator: "Liquidity coverage ratio (LCR)", definition: "LCR measures ANB’s ability to meet its short-term financial obligations. The LCR is calculated by comparing ANB’s high quality liquid assets to its total net cash flows, over a 30-day period.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 1", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 16, id: "net-stability-funding-ratio-nsfr", indicator: "Net Stability Funding ratio (NSFR)", definition: "NSFR measures the proportion of long-term assets funded by stable funding and is calculated as the amount of available stable funding compared to amount of required stable funding over a one-year horizon.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 1", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 17, id: "liquidity-reserve-ratio", indicator: "Liquidity Reserve Ratio", definition: "The Liquidity Reserve Ratio (LRR) metric measures the proportion of the bank’s total liquid assets relative to its qualified customer deposits, ensuring compliance with liquidity requirements set by SAMA", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 1", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 18, id: "customer-loans-deposit-ratio", indicator: "Customer Loans – Deposit Ratio", definition: "The Customer Loans-Deposit Ratio It reflects the bank’s ability to fund its lending activities through stable sources and ensures compliance with liquidity and funding requirements set by SAMA, as well as internal governance bodies.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 1", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 40, id: "maximum-interbank-dependency-ratio-overnight", indicator: "Maximum Interbank Dependency Ratio (Overnight)", definition: "The maximum interbank dependency ratio reflects the Bank’s reliance on highly volatile and short-term market funding, which can pose liquidity risk during stressed conditions", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 41, id: "maximum-interbank-dependency-ratio-total", indicator: "Maximum Interbank Dependency Ratio (Total)", definition: "The maximum interbank dependency ratio (total) reflects the bank’s reliance on interbank funding, which can pose liquidity risk during stressed market conditions.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 42, id: "liquidity-mismatch-ratio-0-7-days", indicator: "Liquidity Mismatch Ratio (0 – 7 days)", definition: "The liquidity mismatch ratio metric reflects the bank’s short-term liquidity position and ability to meet obligations without resorting to emergency funding.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 43, id: "liquidity-mismatch-ratio-8-30-days", indicator: "Liquidity Mismatch Ratio (8 – 30 days)", definition: "The liquidity mismatch ratio metric reflects the bank’s short-term liquidity position and ability to meet obligations without resorting to emergency funding.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 59, id: "funding-concentration-ratio-top-10", indicator: "Funding concentration Ratio - Top-10", definition: "The funding concentration ratio (Top 10) reflects the bank’s ability to withstand liquidity stress arising from the withdrawal of its largest depositors by maintaining sufficient liquid assets.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 2B", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 60, id: "funding-concentration-ratio-top-20", indicator: "Funding concentration Ratio - Top-20", definition: "The funding concentration ratio (Top 20) reflects the bank’s ability to withstand liquidity stress arising from the withdrawal of its largest depositors by maintaining sufficient liquid assets.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 2B", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 61, id: "funding-concentration-ratio-lfps", indicator: "Funding concentration Ratio - LFPs", definition: "The funding concentration ratio (LFPs) metric reflects the bank’s ability to withstand liquidity stress arising from the withdrawal of large funding sources by maintaining sufficient liquid assets dedicated to those providers.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Monthly", criticality: "Level 2B", owner: "Market Risk", committee: "RMC/ ALCO", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "market-risk": [
+    { sNo: 19, id: "value-at-risk-var", indicator: "Value-at-Risk (VaR)", definition: "The exposures measured in terms of VaR, by individual market risk factor and by aggregate across all market risk factors, should comply with the MATs approved by the Board/ExCom.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 1", owner: "Market Risk", committee: "ALCO, MRPC", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 20, id: "total-investments-total-assets", indicator: "Total investments / Total Assets", definition: "This ratio reflects the bank’s asset allocation strategy and helps monitor exposure to market and credit risk through investment holdings.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 1", owner: "Market Risk", committee: "ALCO, MRPC", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 44, id: "interest-rate-dv01", indicator: "Interest Rate DV01", definition: "Limits on the change in portfolio value for a one basis point movement in interest rates, used to manage interest rate sensitivity.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "ALCO, MRPC", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 45, id: "foreign-exchange-volume", indicator: "Foreign Exchange Volume", definition: "Predefined thresholds reflecting the dollar equivalent net positions in SAR and other currencies not to exceed the approved volume limits.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "ALCO, MRPC", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 46, id: "all-asset-classes", indicator: "All Asset Classes", definition: "Investment exposures, measured by notional principals and mark-to-market (MTM) and by various dimensions such as asset class, external credit rating, geographical locations, maturity and payment rank, should comply with the Board/ExCom limits and MATs set by MRPC. The exposures should at all times comply with the relevant regulatory ceilings on investments.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "ALCO, MRPC", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 47, id: "international-investments-local-foreign-currency-to-total-investment", indicator: "International investments (Local/foreign currency) to total investment", definition: "This ratio reflects the bank’s exposure to cross-border investment risk, including foreign exchange, sovereign, and geopolitical risks.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "ALCO, MRPC", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 48, id: "international-investments-local-foreign-currency-to-total-regulatory-capital-tier-1-tier2", indicator: "International investments (Local/foreign currency) to total regulatory capital (Tier 1 + Tier2)", definition: "This ratio reflects the bank’s capacity to absorb potential losses from cross-border investments and manage country, currency, and geopolitical risks.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Daily", criticality: "Level 2A", owner: "Market Risk", committee: "ALCO, MRPC", comment: "MRD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "model-risk": [
+    { sNo: 62, id: "total-models-past-due-for-validation", indicator: "Total Models Past Due for Validation", definition: "The total models past due for validation reflects governance effectiveness and compliance with regulatory and internal standards for model validation", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Enterprise Risk Management", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "operational-risk": [
+    { sNo: 21, id: "operational-loss-ratio", indicator: "Operational Loss Ratio", definition: "Operational risk appetite is an integral part of Bank’s overall Risk Appetite, expressed in terms of capital adequacy ratio.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "ORMD", committee: "ORC", comment: "ORD", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "people-and-conduct-risk": [
+    { sNo: 22, id: "overall-saudization-rate-osr", indicator: "Overall Saudization Rate (OSR)", definition: "The overall Saudization rate reflects compliance with local labor regulations and the bank’s commitment to nationalization objectives.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Human Resources Group", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 49, id: "staff-turnover-annualized", indicator: "Staff Turnover (Annualized)", definition: "The staff turnover ratio metric measures the annualized rate at which employees leave the organization during a given period. It reflects workforce stability and the effectiveness of employee retention strategies", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Human Resources Group", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 50, id: "people-non-compliance-ratio", indicator: "People non-compliance ratio", definition: "The people non-compliance ratio reflects the effectiveness of compliance culture and governance within the organization.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Human Resources Group", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 63, id: "sama-mandatory-training-ratio", indicator: "SAMA mandatory training ratio", definition: "The SAMA mandatory training ratio ensures that all relevant staff receive periodic training as required by SAMA.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Human Resources Group", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "reputational-risk": [
+    { sNo: 23, id: "credit-rating", indicator: "Credit Rating", definition: "Credit rating serves as a key quantitative indicator within the RAF, reflecting the organization’s perceived creditworthiness by external rating agencies. It encapsulates market confidence, financial resilience, and reputational standing.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 1", owner: "Finance and Planning", committee: "RMC/ ALCO", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 51, id: "stock-price-decline", indicator: "Stock Price Decline", definition: "The stock price decline metric measures the percentage decrease in the bank’s stock price over a quarter.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "Finance and Planning", committee: "RMC/ ALCO", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } },
+    { sNo: 52, id: "negative-media-coverage-count", indicator: "Negative media coverage count", definition: "The negative media coverage count reflects the public sentiment due to controversies, service failures and brand vulnerability to reputational shocks.", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2A", owner: "PR & CSR and  Marketing & Customer Experience", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ],
+  "shariah-risk": [
+    { sNo: 64, id: "sharia-non-compliance-risk-index", indicator: "Sharia Non-Compliance Risk Index", definition: "The SNCR reflects the overall exposure of the Bank to Sharia non-compliance risk across key Islamic banking activities", thresholds: { green: 0.02, amber: 0.03, red: 0.04, regulatory: 0.05 }, thresholdOps: { green: "<=", amber: "<=", red: "<=", regulatory: "<=" }, frequency: "Quarterly", criticality: "Level 2B", owner: "Islamic Banking Division", committee: "RMC", comment: "P2", currentValue: 0.1, status: "red", meter: { scaleMin: 0, scaleMax: 0.06, markerLeftPct: 100, regulatoryLeftPct: 83.33, bands: [{color:"green",leftPct:0,widthPct:33.33},{color:"amber",leftPct:33.33,widthPct:16.67},{color:"red",leftPct:50.0,widthPct:50.0}] } }
+  ]
+});
+
+/* ============================================================================
+   croDashboardConfig.sas - now data-driven off the real sheet wherever the
+   sheet has the answer (rafDashboardAggregates.sas): KPI counts and the
+   NEWEST period of the Heatmap/Treemap/Trend zones are real. (Critical Risk
+   Indicators has been removed - not currently required.) The sheet has
+   exactly one reporting period (Q2-2026), so
+   the 3 "prior period" columns those 3 zones show have no real data to
+   compute from - each is that same group's real current count copied
+   forward, clearly marked as the future backend swap-in point at its build
+   site in rafDashboardAggregates.sas. isPlaceholderData stays true to
+   reflect that those prior-period columns are still illustrative.
+   ============================================================================ */
+const croDashboardConfig = Object.freeze({
+  isPlaceholderData: true,
+  kpi: { withinAppetitePct: 0.0, withinAppetiteCount: 0, watchCount: 0, breachCount: 64, totalCount: 64 },
+  heatmapByCriticality: [
+    { criticality: "Level 1", totalIndicators: 23, periods: [{date:"2026-06-30",good:0,watch:0,breach:23,trend:"up"},{date:"2026-03-31",good:0,watch:0,breach:23,trend:"up"},{date:"2025-12-31",good:0,watch:0,breach:23,trend:"up"},{date:"2025-09-30",good:0,watch:0,breach:23,trend:"up"}] },
+    { criticality: "Level 2A", totalIndicators: 29, periods: [{date:"2026-06-30",good:0,watch:0,breach:29,trend:"up"},{date:"2026-03-31",good:0,watch:0,breach:29,trend:"up"},{date:"2025-12-31",good:0,watch:0,breach:29,trend:"up"},{date:"2025-09-30",good:0,watch:0,breach:29,trend:"up"}] },
+    { criticality: "Level 2B", totalIndicators: 12, periods: [{date:"2026-06-30",good:0,watch:0,breach:12,trend:"up"},{date:"2026-03-31",good:0,watch:0,breach:12,trend:"up"},{date:"2025-12-31",good:0,watch:0,breach:12,trend:"up"},{date:"2025-09-30",good:0,watch:0,breach:12,trend:"up"}] }
+  ],
+  ownershipOptions: ["Credit","Credit Risk","Cyber Risk Department","Enterprise Risk Management","Finance and Planning","Fraud Risk Department","Human Resources Group","Islamic Banking Division","Legal Department","Market Risk","ORMD","PR & CSR and  Marketing & Customer Experience","RMG"],
+  treemapByOwnership: {"Credit": [{date:"2026-06-30",good:0,watch:0,breach:21},{date:"2026-03-31",good:0,watch:0,breach:21},{date:"2025-12-31",good:0,watch:0,breach:21},{date:"2025-09-30",good:0,watch:0,breach:21}],"Credit Risk": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Cyber Risk Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Enterprise Risk Management": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Finance and Planning": [{date:"2026-06-30",good:0,watch:0,breach:5},{date:"2026-03-31",good:0,watch:0,breach:5},{date:"2025-12-31",good:0,watch:0,breach:5},{date:"2025-09-30",good:0,watch:0,breach:5}],"Fraud Risk Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Human Resources Group": [{date:"2026-06-30",good:0,watch:0,breach:4},{date:"2026-03-31",good:0,watch:0,breach:4},{date:"2025-12-31",good:0,watch:0,breach:4},{date:"2025-09-30",good:0,watch:0,breach:4}],"Islamic Banking Division": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Legal Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Market Risk": [{date:"2026-06-30",good:0,watch:0,breach:21},{date:"2026-03-31",good:0,watch:0,breach:21},{date:"2025-12-31",good:0,watch:0,breach:21},{date:"2025-09-30",good:0,watch:0,breach:21}],"ORMD": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"PR & CSR and  Marketing & Customer Experience": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"RMG": [{date:"2026-06-30",good:0,watch:0,breach:5},{date:"2026-03-31",good:0,watch:0,breach:5},{date:"2025-12-31",good:0,watch:0,breach:5},{date:"2025-09-30",good:0,watch:0,breach:5}]},
+  trendByPillar: { periods: ["2025-09-30","2025-12-31","2026-03-31","2026-06-30"], pillar1WatchBreachCount: [5,5,5,5], pillar2WatchBreachCount: [15,15,15,15] }
+});
+
+/* ============================================================================
+   raStyles.sas - generate_raf_styles (RAF scoped CSS + icon sprite).
+   Injected into the page at runtime, exactly as the real app does it, via
+   getRAFHTML() below (html += RAF_STYLE_BLOCK; html += RAF_ICON_DEFS;).
+   ============================================================================ */
+const RAF_STYLE_BLOCK = `<style>
+.raf-app {
+  --page:        #f8fafc;
+  --surface-1:   #ffffff;
+  --surface-2:   #f9fafb;
+  --border:      #e5e7eb;
+  --text-1:      #1f2937;
+  --text-2:      #6b7280;
+  --text-3:      #9ca3af;
+  --brand:       #1e3a8a;
+  --brand-2:     #3b82f6;
+  --brand-tint:  #eff6ff;
+  --steel:       #0891b2;
+  --steel-tint:  #ecfeff;
+  --navy:        #1e3a8a;
+  --sky:         #93c5fd;
+  --series-2:    #7c3aed;
+  --good:          #166534;
+  --good-tint:     #dcfce7;
+  --warning:       #92400e;
+  --warning-tint:  #fef3c7;
+  --serious:       #c2410c;
+  --serious-tint:  #ffedd5;
+  --critical:      #991b1b;
+  --critical-tint: #fee2e2;
+  display: block; color: var(--text-1);
+  font-family: "Inter", "Arial", sans-serif;
+}
+.raf-app * { box-sizing: border-box; }
+.raf-app a { text-decoration: none; color: inherit; }
+.raf-app .raf-topbar { background: linear-gradient(135deg, var(--navy) 0%, var(--brand-2) 100%);
+  padding: 14px 22px; display: flex; align-items: center; justify-content: space-between;
+  border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05); margin-bottom: 20px; }
+.raf-app .raf-topbar-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; font-size: 1.05rem; letter-spacing: -.01em; }
+.raf-app .raf-cro-badge { background: rgba(255,255,255,.18); color: #fff; font-size: .68rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; padding: 4px 11px; border-radius: 20px; border: 1px solid rgba(255,255,255,.35); }
+.raf-app .raf-body { padding: 0; }
+.raf-app .crumb { font-size: .8rem; color: var(--text-3); margin-bottom: 10px; }
+.raf-app .crumb b { color: var(--navy); font-weight: 700; cursor: pointer; }
+.raf-app .crumb b:hover { color: var(--brand-2); text-decoration: underline; }
+.raf-app .crumb-current { color: var(--text-1); font-weight: 700; }
+.raf-app h2.raf-pagetitle { font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; letter-spacing: -.01em; }
+.raf-app p.raf-pagesub { color: var(--text-2); font-size: .88rem; margin-bottom: 20px; }
+.raf-app .btn { background: var(--brand-2); color: #fff; border: none; padding: 9px 18px;
+  border-radius: 8px; font-size: .82rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; gap: 8px; transition: background .2s; }
+.raf-app .btn:hover { background: var(--brand); }
+.raf-app .btn.ghost { background: transparent; color: var(--brand-2); border: 1.5px solid var(--brand-2); margin-left: 8px; }
+.raf-app .btn.ghost:hover { background: var(--brand-tint); }
+.raf-app select { font-family: inherit; font-size: .82rem; font-weight: 700; color: var(--text-1);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; cursor: pointer; }
+.raf-app .filter-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+  padding: 16px 20px; margin-bottom: 18px; display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 16px; align-items: start; }
+.raf-app .filter-fields { display: flex; gap: 18px; flex-wrap: wrap; }
+.raf-app .filter-field label { display: block; font-size: .66rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
+.raf-app .filter-note { grid-column: 1 / -1; font-size: .78rem; color: var(--text-2); background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+.raf-app .filter-note b { color: var(--text-1); }
+.raf-app .note-box { border-left: 3px solid var(--brand-2); background: var(--brand-tint); border-radius: 0 8px 8px 0; padding: 10px 14px; }
+.raf-app .note-box-title { font-size: .72rem; font-weight: 800; color: var(--brand); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
+.raf-app .note-line { font-size: .76rem; color: var(--text-2); margin-bottom: 4px; line-height: 1.4; }
+.raf-app .note-line:last-child { margin-bottom: 0; }
+.raf-app .note-line b { color: var(--text-1); }
+.raf-app .raf-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 2px solid var(--border); margin-bottom: 18px; }
+.raf-app .raf-tab { background: none; border: none; font-family: inherit; font-size: .84rem; font-weight: 700;
+  color: var(--text-2); padding: 12px 18px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color .2s, border-color .2s; }
+.raf-app .raf-tab:hover { color: var(--brand-2); }
+.raf-app .raf-tab.active { color: var(--brand); border-bottom-color: var(--brand-2); }
+.raf-app .raf-tabpanel { display: none; }
+.raf-app .raf-tabpanel.active { display: block; }
+.raf-app .zone-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px;
+  margin-bottom: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.05); overflow: hidden; }
+.raf-app .zone-toolbar { background: var(--surface-2); border-bottom: 1px solid var(--border); padding: 10px 18px;
+  display: flex; justify-content: flex-end; align-items: center; gap: 10px; }
+.raf-app .zone-body { padding: 16px 18px 18px; }
+.raf-app .zone-desc { font-size: .8rem; color: var(--text-2); margin-bottom: 14px; }
+.raf-app .zone-select { display: flex; align-items: center; gap: 8px; }
+.raf-app .zone-select label { font-size: .72rem; color: var(--text-2); font-weight: 700; }
+/* .ind-*/.rag-pill (Critical Risk Indicators cards) removed along with
+   that zone - not currently required. */
+/* table-layout:fixed + an explicit first-column width makes the wider
+   (one row per criticality, periods spread out as column groups) heatmap
+   distribute its remaining columns evenly across the full panel width
+   instead of shrink-wrapping to content. Coloured .num header cells (not
+   just body cells) tie each column group visually to the data beneath
+   it. */
+.raf-app .heatmap-table { width: 100%; border-collapse: collapse; font-size: .8rem; table-layout: fixed; }
+.raf-app .heatmap-table th { background: var(--surface-2); text-transform: uppercase; font-size: .62rem;
+  color: var(--text-3); font-weight: 800; padding: 10px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+.raf-app .heatmap-table th.num, .raf-app .heatmap-table td.num { text-align: center; }
+.raf-app .heatmap-table th:first-child, .raf-app .heatmap-table td:first-child { width: 17%; }
+.raf-app .heatmap-table td { padding: 10px; border-bottom: 1px solid var(--border); }
+.raf-app .heatmap-table td.crit-cell { font-weight: 800; color: var(--brand); background: var(--brand-tint); vertical-align: middle; }
+.raf-app .heatmap-table td.num { font-weight: 800; font-size: .92rem; }
+.raf-app .heatmap-table td.num.good, .raf-app .heatmap-table th.num.good { background: var(--good-tint); color: var(--text-1); }
+.raf-app .heatmap-table td.num.warning, .raf-app .heatmap-table th.num.warning { background: var(--warning-tint); color: var(--text-1); }
+.raf-app .heatmap-table td.num.critical, .raf-app .heatmap-table th.num.critical { background: var(--critical-tint); color: var(--text-1); }
+.raf-app .table-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.raf-app .table-filter-input { flex: 1; min-width: 220px; font-family: inherit; font-size: .8rem; padding: 7px 10px;
+  border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2); color: var(--text-1); }
+.raf-app .table-filter-count { font-size: .74rem; color: var(--text-3); }
+.raf-app .treemap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 14px; }
+.raf-app .treemap-date { display: inline-block; background: var(--brand); color: #fff; font-size: .66rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 6px 6px 0 0; }
+.raf-app .treemap-rect { display: flex; gap: 2px; height: 120px; background: var(--surface-2); border-radius: 0 8px 8px 8px; overflow: hidden; }
+.raf-app .tm-green, .raf-app .tm-amber, .raf-app .tm-red { display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; }
+.raf-app .tm-green { background: var(--good); }
+.raf-app .tm-amber { background: var(--warning); }
+.raf-app .tm-red { background: var(--critical); }
+.raf-app .tm-right { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.raf-app .trend-legend { display: flex; gap: 16px; margin-bottom: 8px; font-size: .76rem; color: var(--text-2); font-weight: 600; }
+.raf-app .trend-legend span { display: flex; align-items: center; gap: 6px; }
+.raf-app .trend-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.raf-app .trend-chart-wrap { overflow-x: auto; max-width: 560px; }
+.raf-app .trend-chart-wrap svg { width: 100%; height: auto; display: block; }
+.raf-app .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 14px; }
+.raf-app .domain-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 14px;
+  padding: 18px; cursor: pointer; transition: border-color .2s, transform .2s; }
+.raf-app .domain-card:hover { border-color: var(--brand-2); transform: translateY(-2px); }
+.raf-app .domain-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.raf-app .domain-icon { width: 44px; height: 44px; border-radius: 11px; background: var(--brand-tint);
+  color: var(--brand); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.raf-app .domain-title { font-size: 1rem; font-weight: 800; }
+.raf-app .domain-meta { font-size: .7rem; color: var(--text-3); font-weight: 600; margin-top: 2px; }
+.raf-app .domain-desc { font-size: .8rem; color: var(--text-2); line-height: 1.5; margin-bottom: 14px; min-height: 40px; }
+.raf-app .domain-split { display: flex; gap: 2px; height: 7px; border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+.raf-app .domain-split span { height: 100%; }
+.raf-app .domain-split-caption { font-size: .68rem; color: var(--text-3); margin-bottom: 12px; }
+.raf-app .domain-foot { display: flex; justify-content: flex-end; border-top: 1px solid var(--border); padding-top: 10px; }
+.raf-app .domain-link { font-size: .76rem; font-weight: 700; color: var(--brand-2); }
+.raf-app .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 320px)); gap: 14px; }
+.raf-app .tile { background: var(--surface-1); border: 2px solid var(--border); border-radius: 12px;
+  padding: 16px; cursor: pointer; transition: border-color .2s, transform .2s; }
+.raf-app .tile:hover { border-color: var(--brand-2); transform: translateY(-2px); }
+.raf-app .tile-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.raf-app .tile-icon { width: 38px; height: 38px; border-radius: 9px; background: var(--brand-tint);
+  color: var(--brand); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.raf-app .tile-title { font-size: .92rem; font-weight: 700; }
+.raf-app .tile-count { font-size: .68rem; color: var(--text-3); font-weight: 600; }
+.raf-app .tile-desc { font-size: .78rem; color: var(--text-2); line-height: 1.45; margin-bottom: 12px; min-height: 36px; }
+.raf-app .tile-split { display: flex; gap: 2px; height: 6px; border-radius: 4px; overflow: hidden; margin-bottom: 7px; }
+.raf-app .tile-split span { height: 100%; }
+.raf-app .tile-split-caption { font-size: .66rem; color: var(--text-3); margin-bottom: 10px; }
+.raf-app .tile-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 9px; }
+.raf-app .tile-owner { font-size: .66rem; font-weight: 700; letter-spacing: .03em; padding: 3px 8px; border-radius: 20px; background: var(--steel-tint); color: var(--steel); }
+.raf-app .tile-freq { font-size: .7rem; color: var(--text-3); }
+.raf-app .detail-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; }
+.raf-app .detail-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+.raf-app .detail-head h3 { font-size: 1.1rem; font-weight: 800; }
+.raf-app .detail-meta { font-size: .76rem; color: var(--text-2); display: flex; gap: 16px; margin: 8px 0 6px; flex-wrap: wrap; }
+.raf-app .detail-meta span b { color: var(--text-1); }
+.raf-app .direction-note { display: inline-block; font-size: .72rem; font-weight: 600; color: var(--text-2);
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 11px; margin: 10px 0 16px; }
+.raf-app .metric-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+.raf-app .metric-card:last-child { margin-bottom: 0; }
+.raf-app .metric-top { display: grid; grid-template-columns: 1.6fr 1fr auto; gap: 14px; align-items: start; margin-bottom: 10px; }
+.raf-app .metric-name { font-size: .88rem; font-weight: 700; margin-bottom: 3px; }
+.raf-app .metric-name small { font-weight: 400; color: var(--text-3); }
+.raf-app .metric-def { font-size: .74rem; color: var(--text-2); line-height: 1.45; }
+.raf-app .metric-tags { display: flex; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+.raf-app .chip { font-size: .62rem; font-weight: 700; letter-spacing: .03em; padding: 2px 7px; border-radius: 5px; }
+.raf-app .chip.level { background: var(--brand-tint); color: var(--brand); }
+.raf-app .chip.comment { background: var(--steel-tint); color: var(--steel); }
+.raf-app .metric-current .num { font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; }
+.raf-app .metric-current .num.good { color: var(--good); }
+.raf-app .metric-current .num.warning { color: var(--warning); }
+.raf-app .metric-current .num.critical { color: var(--critical); }
+.raf-app .metric-current .ph { display: block; font-size: .58rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--text-3); margin-top: 2px; }
+.raf-app .status-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 20px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
+.raf-app .status-chip svg { width: 13px; height: 13px; flex-shrink: 0; }
+.raf-app .status-chip.good { background: var(--good-tint); color: var(--text-1); }
+.raf-app .status-chip.good svg { color: var(--good); }
+.raf-app .status-chip.warning { background: var(--warning-tint); color: var(--text-1); }
+.raf-app .status-chip.warning svg { color: var(--warning); }
+.raf-app .status-chip.serious { background: var(--serious-tint); color: var(--text-1); }
+.raf-app .status-chip.serious svg { color: var(--serious); }
+.raf-app .status-chip.critical { background: var(--critical-tint); color: var(--text-1); }
+.raf-app .status-chip.critical svg { color: var(--critical); }
+.raf-app .meter { margin: 4px 0 2px; }
+.raf-app .meter-track { position: relative; height: 13px; display: flex; gap: 2px; }
+.raf-app .meter-track .band { height: 100%; border-radius: 3px; }
+.raf-app .meter-track .band.good { background: var(--good-tint); }
+.raf-app .meter-track .band.warning { background: var(--warning-tint); }
+.raf-app .meter-track .band.serious { background: var(--serious-tint); }
+.raf-app .meter-track .band.critical { background: var(--critical-tint); }
+.raf-app .meter-marker { position: absolute; top: -12px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 2; }
+.raf-app .meter-marker .mval { font-size: .64rem; font-weight: 800; background: var(--text-1); color: #fff;
+  padding: 1px 6px; border-radius: 4px; white-space: nowrap; margin-bottom: 1px; }
+.raf-app .meter-marker .mline { width: 2px; height: 24px; background: var(--text-1); opacity: .5; }
+.raf-app .meter-marker .mdot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--text-1); margin-top: -1px; }
+.raf-app .meter-marker.good .mdot, .raf-app .meter-marker.good .mline, .raf-app .meter-marker.good .mval { background: var(--good); }
+.raf-app .meter-marker.warning .mdot, .raf-app .meter-marker.warning .mline, .raf-app .meter-marker.warning .mval { background: var(--warning); }
+.raf-app .meter-marker.serious .mdot, .raf-app .meter-marker.serious .mline, .raf-app .meter-marker.serious .mval { background: var(--serious); }
+.raf-app .meter-marker.critical .mdot, .raf-app .meter-marker.critical .mline, .raf-app .meter-marker.critical .mval { background: var(--critical); }
+.raf-app .reg-line { position: absolute; top: -4px; bottom: -4px; width: 0; border-left: 2px dashed var(--text-3); }
+.raf-app .reg-line .reg-label { position: absolute; top: -15px; left: 4px; font-size: .58rem; font-weight: 700; color: var(--text-3); white-space: nowrap; }
+.raf-app .meter-scale { display: flex; justify-content: space-between; font-size: .62rem; color: var(--text-3); margin-top: 20px; }
+.raf-app .metric-bottom { display: flex; margin-top: 6px; }
+.raf-app .trend-block { display: flex; align-items: center; gap: 8px; }
+.raf-app .trend-block .trend-caption { font-size: .68rem; color: var(--text-3); font-style: italic; }
+@media (max-width: 860px) {
+  .raf-app .filter-panel { grid-template-columns: 1fr; }
+  .raf-app .metric-top { grid-template-columns: 1fr; }
+}
+</style>`;
+const RAF_ICON_DEFS = `<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"><defs>
+<symbol id="ic-good" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12.5 L11 15.5 L16 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="ic-warning" viewBox="0 0 24 24"><path d="M12 3.5 L21.5 20.5 L2.5 20.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><line x1="12" y1="9.5" x2="12" y2="14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.1" fill="currentColor"/></symbol>
+<symbol id="ic-serious" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="7.5" x2="12" y2="13.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.5" r="1.1" fill="currentColor"/></symbol>
+<symbol id="ic-critical" viewBox="0 0 24 24"><path d="M8 2.5 H16 L21.5 8 V16 L16 21.5 H8 L2.5 16 V8 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</defs></svg>`;
+
+/* ============================================================================
+   raUtils.sas - generate_raf_utils
+   ============================================================================ */
+const RAFUtils = {
+  formatPercent(value, decimals = 1) {
+    if (typeof value !== "number" || isNaN(value)) return "-";
+    return (value * 100).toFixed(decimals) + "%";
+  },
+  formatDate(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr + "T00:00:00");
+    if (isNaN(d.getTime())) return dateStr;
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return String(d.getDate()).padStart(2, "0") + "-" + months[d.getMonth()] + "-" + d.getFullYear();
+  },
+  getTodayDate() {
+    return new Date().toISOString().split("T")[0];
+  }
+};
+
+/* ============================================================================
+   raStatus.sas - generate_javascript_rastatus (REWRITTEN: thin passthrough
+   over the status/meter fields rafDataLoader.sas already computed)
+   ============================================================================ */
+const RAF_STATUS_CSS_CLASS = { green: "good", amber: "warning", red: "critical",
+  good: "good", watch: "warning", breach: "critical", regulatoryBreach: "critical" };
+const RAF_STATUS_LABEL = { green: "Within Tolerance", amber: "Watch", red: "Breach",
+  good: "Within Tolerance", watch: "Watch", breach: "Breach", regulatoryBreach: "Breach" };
+const RAF_STATUS_ICON = { green: "ic-good", amber: "ic-warning", red: "ic-critical",
+  good: "ic-good", watch: "ic-warning", breach: "ic-critical", regulatoryBreach: "ic-critical" };
+
+const RAFStatus = {
+  evaluateStatus(metric) {
+    if (!metric || !metric.status) return "green";
+    return metric.status;
+  },
+  computeMeterGeometry(metric) {
+    if (metric && metric.meter) return metric.meter;
+    return { bands: [], markerLeftPct: null, regulatoryLeftPct: null, scaleMin: 0, scaleMax: 1 };
+  },
+  rollUpStatusCounts(metrics) {
+    const counts = { green: 0, amber: 0, red: 0 };
+    (metrics || []).forEach(m => { counts[RAFStatus.evaluateStatus(m)]++; });
+    return counts;
+  }
+};
+
+/* ============================================================================
+   appetiteResultsView.sas - generate_appetite_results_view (REWRITTEN for
+   the sign-aware thresholdOps labels, the precomputed band list, and the
+   value-number colour matching the pointer/status colour)
+   ============================================================================ */
+const RAFResults = {
+  renderMetricCard(metric) {
+    const status = RAFStatus.evaluateStatus(metric);
+    const cssClass = RAF_STATUS_CSS_CLASS[status];
+    const label = RAF_STATUS_LABEL[status];
+    const icon = RAF_STATUS_ICON[status];
+    const displayValue = RAFUtils.formatPercent(metric.currentValue);
+    let html = "";
+    html += '<div class="metric-card">';
+    html += '  <div class="metric-top">';
+    html += '    <div>';
+    html += '      <div class="metric-name">' + escapeHtml(metric.indicator) + '</div>';
+    html += '      <div class="metric-def">' + escapeHtml(metric.definition) + '</div>';
+    html += '      <div class="metric-tags">';
+    html += '        <span class="chip level">' + escapeHtml(metric.criticality) + '</span>';
+    html += '        <span class="chip comment">' + escapeHtml(metric.comment) + '</span>';
+    html += '      </div>';
+    html += '    </div>';
+    html += '    <div class="metric-current"><span class="num ' + cssClass + '">' + displayValue + '</span></div>';
+    html += '    <div class="status-chip ' + cssClass + '"><svg><use href="#' + icon + '"/></svg>' + label + '</div>';
+    html += '  </div>';
+    html += this.renderMeter(metric, cssClass, displayValue);
+    html += '  <div class="metric-bottom">';
+    html += this.renderTrendBlock();
+    html += '  </div>';
+    html += '</div>';
+    return html;
+  },
+  renderMeter(metric, cssClass, valueLabel) {
+    const geo = RAFStatus.computeMeterGeometry(metric);
+    const t = metric.thresholds || {};
+    const ops = metric.thresholdOps || {};
+    const tierLabel = key => (t[key] === null || t[key] === undefined)
+      ? "-" : ((ops[key] || "") + RAFUtils.formatPercent(t[key], 0));
+    let bands = "";
+    (geo.bands || []).forEach(b => {
+      bands += '<div class="band ' + RAF_STATUS_CSS_CLASS[b.color] + '" style="width:' + b.widthPct.toFixed(1) + '%"></div>';
+    });
+    let html = "";
+    html += '<div class="meter"><div class="meter-track">';
+    html += bands;
+    if (typeof geo.regulatoryLeftPct === "number") {
+      html += '<div class="reg-line" style="left:' + geo.regulatoryLeftPct.toFixed(1) + '%"><span class="reg-label">Reg ' + RAFUtils.formatPercent(t.regulatory, 0) + '</span></div>';
+    }
+    if (typeof geo.markerLeftPct === "number") {
+      html += '<div class="meter-marker ' + cssClass + '" style="left:' + geo.markerLeftPct.toFixed(1) + '%">';
+      html += '<span class="mval">' + valueLabel + '</span><span class="mline"></span><span class="mdot"></span></div>';
+    }
+    html += '</div><div class="meter-scale">';
+    html += '<span>Green ' + tierLabel("green") + '</span>';
+    html += '<span>Amber ' + tierLabel("amber") + '</span><span>Red ' + tierLabel("red") + '</span>';
+    html += '</div></div>';
+    return html;
+  },
+  renderTrendBlock() {
+    let html = "";
+    html += '<div class="trend-block">';
+    html += '<svg width="64" height="20" aria-hidden="true">';
+    html += '<line x1="2" y1="10" x2="62" y2="10" stroke="#d1d5db" stroke-width="2" stroke-dasharray="3 4" stroke-linecap="round"/>';
+    html += '<circle cx="2" cy="10" r="2.5" fill="#d1d5db"/><circle cx="32" cy="10" r="2.5" fill="#d1d5db"/><circle cx="62" cy="10" r="2.5" fill="#d1d5db"/>';
+    html += '</svg>';
+    html += '<span class="trend-caption">No prior period - trend unavailable</span>';
+    html += '</div>';
+    return html;
+  }
+};
+
+/* ============================================================================
+   croDashboardView.sas - generate_cro_dashboard_view (Critical Risk
+   Indicators / renderCriticalIndicators removed - not currently required;
+   the rest is untouched, renders croDashboardConfig's data)
+   ============================================================================ */
+const RAFDashboardView = {
+  // One row per criticality level; each period's Green/Amber/Red runs as its
+  // own 3-column group left-to-right (was one row per criticality/period
+  // pair) - uses the panel's full width properly. Single flat header row
+  // keeps every column lining up 1-for-1 with the body rows, so
+  // filterBarHtml()/applyTableFilter()/exportTableToExcel() keep working
+  // unchanged. Drops the per-cell trend glyph (referenced icon symbols that
+  // were never actually defined, so it never rendered).
+  renderHeatmapByCriticality() {
+    const periods = (croDashboardConfig.heatmapByCriticality[0] || {}).periods || [];
+    let html = '<table class="heatmap-table"><thead><tr><th>Criticality</th>';
+    periods.forEach(p => {
+      const d = RAFUtils.formatDate(p.date);
+      html += '<th class="num good">' + d + ' Green</th><th class="num warning">' + d + ' Amber</th><th class="num critical">' + d + ' Red</th>';
+    });
+    html += '</tr></thead><tbody>';
+    croDashboardConfig.heatmapByCriticality.forEach(row => {
+      html += '<tr><td class="crit-cell">' + escapeHtml(row.criticality)
+        + '<br/><span style="font-weight:400;font-size:.68rem;">' + row.totalIndicators + ' indicators</span></td>';
+      row.periods.forEach(p => {
+        html += '<td class="num good">' + p.good + '</td><td class="num warning">' + p.watch + '</td><td class="num critical">' + p.breach + '</td>';
+      });
+      html += "</tr>";
+    });
+    html += "</tbody></table>";
+    return html;
+  },
+  renderTreemapByOwnership(ownerName) {
+    const periods = croDashboardConfig.treemapByOwnership[ownerName]
+      || croDashboardConfig.treemapByOwnership[croDashboardConfig.ownershipOptions[0]] || [];
+    let html = '<div class="treemap-grid">';
+    periods.forEach(p => {
+      const total = p.good + p.watch + p.breach;
+      const rightTotal = p.watch + p.breach || 1;
+      const greenPct = total ? (p.good / total) * 100 : 0;
+      const rightPct = 100 - greenPct;
+      const amberPct = (p.watch / rightTotal) * 100;
+      const redPct = (p.breach / rightTotal) * 100;
+      html += '<div class="treemap-block"><div class="treemap-date">' + RAFUtils.formatDate(p.date) + '</div>';
+      html += '<div class="treemap-rect"><div class="tm-green" style="width:' + greenPct.toFixed(1) + '%">' + p.good + '</div>';
+      html += '<div class="tm-right" style="width:' + rightPct.toFixed(1) + '%">';
+      html += '<div class="tm-amber" style="height:' + amberPct.toFixed(1) + '%">' + p.watch + '</div>';
+      html += '<div class="tm-red" style="height:' + redPct.toFixed(1) + '%">' + p.breach + '</div>';
+      html += '</div></div></div>';
+    });
+    html += "</div>";
+    return html;
+  },
+  renderTrendByPillar() {
+    const cfg = croDashboardConfig.trendByPillar;
+    const periods = cfg.periods;
+    const p1 = cfg.pillar1WatchBreachCount;
+    const p2 = cfg.pillar2WatchBreachCount;
+    const maxVal = Math.max(...p1, ...p2, 4);
+    const left = 40, right = 520, top = 20, bottom = 180;
+    const xAt = i => left + (i * (right - left)) / (periods.length - 1);
+    const yAt = v => bottom - (v / maxVal) * (bottom - top);
+    const pointsFor = arr => arr.map((v, i) => xAt(i).toFixed(1) + "," + yAt(v).toFixed(1)).join(" ");
+    let html = '<div class="trend-legend"><span><i style="background:var(--brand-2)"></i>Pillar 1</span>';
+    html += '<span><i style="background:var(--series-2)"></i>Pillar 2</span></div>';
+    html += '<div class="trend-chart-wrap"><svg viewBox="0 0 560 210" role="img" aria-label="Trend of watch/breach indicator counts by pillar">';
+    [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+      const y = bottom - f * (bottom - top);
+      html += '<line x1="' + left + '" y1="' + y.toFixed(1) + '" x2="' + right + '" y2="' + y.toFixed(1) + '" stroke="#e5e7eb" stroke-width="1"/>';
+      html += '<text x="' + (left - 6) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="11" fill="#9ca3af">' + Math.round(f * maxVal) + '</text>';
+    });
+    html += '<polyline points="' + pointsFor(p1) + '" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    html += '<polyline points="' + pointsFor(p2) + '" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    periods.forEach((d, i) => {
+      html += '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(p1[i]).toFixed(1) + '" r="4" fill="#3b82f6" stroke="#fff" stroke-width="2"><title>Pillar 1 - ' + RAFUtils.formatDate(d) + ': ' + p1[i] + '</title></circle>';
+      html += '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(p2[i]).toFixed(1) + '" r="4" fill="#7c3aed" stroke="#fff" stroke-width="2"><title>Pillar 2 - ' + RAFUtils.formatDate(d) + ': ' + p2[i] + '</title></circle>';
+      html += '<text x="' + xAt(i).toFixed(1) + '" y="198" text-anchor="middle" font-size="11" fill="#6b7280">' + RAFUtils.formatDate(d) + '</text>';
+    });
+    html += "</svg></div>";
+    return html;
+  }
+};
+
+/* ============================================================================
+   dashboardTableTools.sas - generate_dashboard_table_tools (untouched)
+   ============================================================================ */
+function filterBarHtml(tableId) {
+  return "<div class=\"table-toolbar\">"
+    + "<input type=\"text\" class=\"table-filter-input\" id=\"" + tableId + "-filter-input\" "
+    + "placeholder=\"e.g. Green > 15 AND Criticality = Level 1  |  Date contains 2026\" "
+    + "onkeydown=\"if(event.key==='Enter'){applyTableFilter('" + tableId + "');}\">"
+    + "<button class=\"btn btn-sm\" onclick=\"applyTableFilter('" + tableId + "')\">Apply</button>"
+    + "<button class=\"btn ghost btn-sm\" onclick=\"clearTableFilter('" + tableId + "')\">Clear</button>"
+    + "<span class=\"table-filter-count\" id=\"" + tableId + "-filter-count\"></span>"
+    + "</div>";
+}
+function normalizeFieldToken(s) {
+  return String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+function parseNumericToken(raw) {
+  if (raw === null || raw === undefined) return null;
+  var s = String(raw).trim().replace(/,/g, "").replace(/%$/, "");
+  var m = s.match(/^([+-]?\d+(\.\d+)?)$/);
+  return m ? parseFloat(m[1]) : null;
+}
+function findColumnIndex(table, fieldText) {
+  var headers = table.querySelectorAll("thead th");
+  var target = normalizeFieldToken(fieldText);
+  var best = -1;
+  headers.forEach(function(th, idx) {
+    var norm = normalizeFieldToken(th.textContent);
+    if (norm === target && best === -1) best = idx;
+  });
+  if (best !== -1) return best;
+  headers.forEach(function(th, idx) {
+    var norm = normalizeFieldToken(th.textContent);
+    if (best === -1 && (norm.indexOf(target) !== -1 || target.indexOf(norm) !== -1)) best = idx;
+  });
+  return best;
+}
+var RAF_FILTER_OPERATOR_RE = /^(.*?)\s*(>=|<=|!=|<>|=|>|<|contains|like)\s*(.+)$/i;
+function evaluateClause(table, row, clause) {
+  clause = clause.trim();
+  if (!clause) return true;
+  var m = clause.match(RAF_FILTER_OPERATOR_RE);
+  if (!m) return row.textContent.toLowerCase().indexOf(clause.toLowerCase()) !== -1;
+  var fieldText = m[1].trim();
+  var op = m[2].toLowerCase();
+  var valueText = m[3].trim().replace(/^["\x27]|["\x27]$/g, "");
+  if (!fieldText) return row.textContent.toLowerCase().indexOf(clause.toLowerCase()) !== -1;
+  var colIdx = findColumnIndex(table, fieldText);
+  if (colIdx === -1) return true;
+  var cell = row.children[colIdx];
+  var cellText = cell ? cell.textContent.trim() : "";
+  if (op === "contains" || op === "like") return cellText.toLowerCase().indexOf(valueText.toLowerCase()) !== -1;
+  var cellNum = parseNumericToken(cellText);
+  var valueNum = parseNumericToken(valueText);
+  if (cellNum !== null && valueNum !== null) {
+    switch (op) {
+      case ">": return cellNum > valueNum;
+      case "<": return cellNum < valueNum;
+      case ">=": return cellNum >= valueNum;
+      case "<=": return cellNum <= valueNum;
+      case "=": return cellNum === valueNum;
+      case "!=": case "<>": return cellNum !== valueNum;
+    }
+  }
+  var cellStr = cellText.toLowerCase(), valueStr = valueText.toLowerCase();
+  switch (op) {
+    case "=": return cellStr === valueStr;
+    case "!=": case "<>": return cellStr !== valueStr;
+    case ">": return cellStr > valueStr;
+    case "<": return cellStr < valueStr;
+    case ">=": return cellStr >= valueStr;
+    case "<=": return cellStr <= valueStr;
+    default: return cellStr.indexOf(valueStr) !== -1;
+  }
+}
+function applyTableFilter(tableId) {
+  var table = document.getElementById(tableId);
+  var input = document.getElementById(tableId + "-filter-input");
+  var countEl = document.getElementById(tableId + "-filter-count");
+  if (!table || !input) return;
+  var query = input.value.trim();
+  var rows = table.querySelectorAll("tbody tr");
+  if (!query) {
+    rows.forEach(function(r) { r.style.display = ""; });
+    if (countEl) countEl.textContent = "";
+    return;
+  }
+  var orGroups = query.split(/\s+OR\s+/i).map(function(group) { return group.split(/\s+AND\s+/i); });
+  var shown = 0;
+  rows.forEach(function(row) {
+    var pass = orGroups.some(function(clauses) {
+      return clauses.every(function(clause) { return evaluateClause(table, row, clause); });
+    });
+    row.style.display = pass ? "" : "none";
+    if (pass) shown++;
+  });
+  if (countEl) countEl.textContent = "Showing " + shown + " of " + rows.length + " rows";
+}
+function clearTableFilter(tableId) {
+  var input = document.getElementById(tableId + "-filter-input");
+  if (input) input.value = "";
+  applyTableFilter(tableId);
+}
+function tableToWorksheetXml(tableId, sheetName) {
+  var table = document.getElementById(tableId);
+  if (!table) return "";
+  var headerCells = Array.prototype.slice.call(table.querySelectorAll("thead th"));
+  var headers = headerCells.map(function(th) { return th.textContent.trim(); });
+  var rows = Array.prototype.filter.call(table.querySelectorAll("tbody tr"), function(r) {
+    return r.style.display !== "none";
+  });
+  var xml = "<Worksheet ss:Name=\"" + escapeHtml(sheetName) + "\"><Table>";
+  xml += "<Row>" + headers.map(function(h) {
+    return "<Cell ss:StyleID=\"sHeader\"><Data ss:Type=\"String\">" + escapeHtml(h) + "</Data></Cell>";
+  }).join("") + "</Row>";
+  rows.forEach(function(row) {
+    xml += "<Row>" + Array.prototype.map.call(row.children, function(td) {
+      return "<Cell><Data ss:Type=\"String\">" + escapeHtml(td.textContent.trim()) + "</Data></Cell>";
+    }).join("") + "</Row>";
+  });
+  xml += "</Table></Worksheet>";
+  return xml;
+}
+function downloadWorkbook(worksheetsXml, filenamePrefix) {
+  var doc = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+    + "<?mso-application progid=\"Excel.Sheet\"?>"
+    + "<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" "
+    + "xmlns:o=\"urn:schemas-microsoft-com:office:office\" "
+    + "xmlns:x=\"urn:schemas-microsoft-com:office:excel\" "
+    + "xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">"
+    + "<Styles><Style ss:ID=\"sHeader\"><Font ss:Bold=\"1\" ss:Color=\"#FFFFFF\"/>"
+    + "<Interior ss:Color=\"#1E3A8A\" ss:Pattern=\"Solid\"/></Style></Styles>"
+    + worksheetsXml
+    + "</Workbook>";
+  var blob = new Blob([doc], { type: "application/vnd.ms-excel" });
+  var url = URL.createObjectURL(blob);
+  var ts = new Date().toISOString().slice(0, 10);
+  var link = document.createElement("a");
+  link.href = url;
+  link.download = filenamePrefix + "_" + ts + ".xls";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+function exportTableToExcel(tableId, sheetName, filenamePrefix) {
+  var xml = tableToWorksheetXml(tableId, sheetName);
+  if (!xml) { showNotification("Nothing to export yet.", "error"); return; }
+  downloadWorkbook(xml, filenamePrefix);
+  showNotification(sheetName + " exported.", "success");
+}
+function exportMetricCardsToExcel(categoryKey) {
+  var metrics = appetiteMetricsConfig[categoryKey];
+  if (!metrics || !metrics.length) { showNotification("Nothing to export yet.", "error"); return; }
+  var headers = ["Indicator", "Definition", "Current Value", "Status", "Green", "Amber", "Red", "Regulatory", "Criticality", "Owner", "Committee", "Frequency", "Comment"];
+  var xml = "<Worksheet ss:Name=\"" + escapeHtml(RAFUI.getCategoryTitle(categoryKey)) + "\"><Table>";
+  xml += "<Row>" + headers.map(function(h) {
+    return "<Cell ss:StyleID=\"sHeader\"><Data ss:Type=\"String\">" + escapeHtml(h) + "</Data></Cell>";
+  }).join("") + "</Row>";
+  metrics.forEach(function(m) {
+    var status = RAF_STATUS_LABEL[RAFStatus.evaluateStatus(m)];
+    var cells = [
+      m.indicator, m.definition, RAFUtils.formatPercent(m.currentValue), status,
+      RAFUtils.formatPercent(m.thresholds.green), RAFUtils.formatPercent(m.thresholds.amber),
+      RAFUtils.formatPercent(m.thresholds.red), RAFUtils.formatPercent(m.thresholds.regulatory),
+      m.criticality, m.owner, m.committee, m.frequency, m.comment
+    ];
+    xml += "<Row>" + cells.map(function(c) {
+      return "<Cell><Data ss:Type=\"String\">" + escapeHtml(String(c)) + "</Data></Cell>";
+    }).join("") + "</Row>";
+  });
+  xml += "</Table></Worksheet>";
+  downloadWorkbook(xml, "RAF_" + categoryKey);
+  showNotification(RAFUI.getCategoryTitle(categoryKey) + " exported.", "success");
+}
+
+/* ============================================================================
+   reportHistory.sas - generate_report_history (untouched)
+   ============================================================================ */
+const raf_historyStorageKey = "raf_run_history";
+const RAFHistory = {
+  _readAll() {
+    try {
+      const raw = localStorage.getItem(raf_historyStorageKey);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  _writeAll(all) {
+    try { localStorage.setItem(raf_historyStorageKey, JSON.stringify(all)); }
+    catch (e) { console.error("Could not write RAF run history:", e); }
+  },
+  recordRun(categoryKey, meta) {
+    const all = this._readAll();
+    if (!all[categoryKey]) all[categoryKey] = [];
+    all[categoryKey].unshift({
+      runAt: new Date().toISOString(),
+      reportingDate: meta.reportingDate,
+      source: meta.source || "live",
+      metrics: meta.metrics
+    });
+    all[categoryKey] = all[categoryKey].slice(0, 25);
+    this._writeAll(all);
+  },
+  getHistory(categoryKey) {
+    return this._readAll()[categoryKey] || [];
+  },
+  count(categoryKey) {
+    return this.getHistory(categoryKey).length;
+  },
+  view(categoryKey) {
+    const runs = this.getHistory(categoryKey);
+    const modalTitleEl = document.getElementById("modalTitle");
+    const modalBodyEl = document.getElementById("modalBody");
+    const modal = document.getElementById("reportModal");
+    if (!modalTitleEl || !modalBodyEl || !modal) return;
+    modalTitleEl.textContent = RAFUI.getCategoryTitle(categoryKey) + " - Run History";
+    if (!runs.length) {
+      modalBodyEl.innerHTML = '<p style="color:#6b7280;">No runs recorded yet for this risk area.</p>';
+      modal.classList.add("show");
+      return;
+    }
+    let html = '<div style="margin-bottom:12px; text-align:right;">';
+    html += '<button class="btn btn-secondary" onclick="RAFHistory.clearAll(&apos;' + categoryKey + '&apos;)">Clear All</button></div>';
+    runs.forEach((run, idx) => {
+      const when = new Date(run.runAt);
+      const dateLabel = when.toLocaleDateString() + " " + when.toLocaleTimeString();
+      html += '<div style="border:1px solid #e5e7eb; border-radius:10px; padding:12px 14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">';
+      html += '  <div style="font-size:.85rem; color:#374151;"><b>' + escapeHtml(dateLabel) + '</b><br/>';
+      html += '  Reporting date: ' + escapeHtml(run.reportingDate || "-") + ' - Source: ' + escapeHtml(run.source) + '</div>';
+      html += '  <div style="display:flex; gap:8px;">';
+      html += '    <button class="btn btn-primary" onclick="RAFHistory.replay(&apos;' + categoryKey + '&apos;,' + idx + ')">View Results</button>';
+      html += '    <button class="btn btn-secondary" onclick="RAFHistory.clearEntry(&apos;' + categoryKey + '&apos;,' + idx + ')">Delete</button>';
+      html += '  </div>';
+      html += '</div>';
+    });
+    modalBodyEl.innerHTML = html;
+    modal.classList.add("show");
+  },
+  replay(categoryKey, index) {
+    const runs = this.getHistory(categoryKey);
+    const run = runs[index];
+    if (!run) return;
+    closeModal();
+    RAFRouting.showCategory(categoryKey);
+    setTimeout(() => {
+      RAFReports.applyBackendResult(categoryKey, { metrics: run.metrics });
+      showNotification("Showing a saved run from " + new Date(run.runAt).toLocaleString(), "success");
+    }, 60);
+  },
+  clearEntry(categoryKey, index) {
+    const all = this._readAll();
+    if (all[categoryKey]) { all[categoryKey].splice(index, 1); this._writeAll(all); }
+    this.view(categoryKey);
+  },
+  clearAll(categoryKey) {
+    const all = this._readAll();
+    all[categoryKey] = [];
+    this._writeAll(all);
+    this.view(categoryKey);
+  }
+};
+
+/* ============================================================================
+   appetiteReportGeneration.sas - generate_appetite_report_generation
+   (untouched - "Run Category" hits the real bank-internal backend URL; in
+   this sandboxed mockup that fetch cannot succeed, so it falls into the
+   existing .catch() fallback path exactly as designed, and just re-renders
+   the same configured values with a warning notice - it does not crash.)
+   ============================================================================ */
+const raf_metricsEndpoint = "https://enterprisebsl.anb.com.sa/SASStoredProcess/do?&_program=/User Folders/62917/My Folder/Risk Appetite Framework/RAF_Metrics_Backend";
+const RAFReports = {
+  runCategory(categoryKey, reportingDate) {
+    const metrics = appetiteMetricsConfig[categoryKey];
+    if (!metrics) { showNotification("No metrics configured for this risk area.", "error"); return; }
+    const date = reportingDate || RAFUtils.getTodayDate();
+    showLoading();
+    fetch(raf_metricsEndpoint, {
+      method: "POST",
+      body: new URLSearchParams({ risk_area: categoryKey, reporting_date: date })
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Network response was not ok: " + response.status);
+        return response.json();
+      })
+      .then(function (data) {
+        hideLoading();
+        RAFReports.applyBackendResult(categoryKey, data);
+        RAFHistory.recordRun(categoryKey, { reportingDate: date, metrics: data.metrics && data.metrics.length ? data.metrics : metrics, source: "live" });
+        showNotification(RAFUI.getCategoryTitle(categoryKey) + " updated.", "success");
+      })
+      .catch(function (err) {
+        hideLoading();
+        console.error("RAF_Metrics_Backend call failed:", err);
+        showNotification("Could not reach the backend - showing the last configured values instead.", "warning");
+        RAFReports.applyBackendResult(categoryKey, { metrics: metrics });
+        RAFHistory.recordRun(categoryKey, { reportingDate: date, metrics: metrics, source: "fallback" });
+      });
+  },
+  applyBackendResult(categoryKey, data) {
+    const container = document.getElementById("raf-metric-cards-" + categoryKey);
+    if (!container) return;
+    const metrics = (data.metrics && data.metrics.length) ? data.metrics : (appetiteMetricsConfig[categoryKey] || []);
+    container.innerHTML = metrics.map(function (m) { return RAFResults.renderMetricCard(m); }).join("");
+  },
+  viewHistory(categoryKey) {
+    RAFHistory.view(categoryKey);
+  }
+};
+
+/* ============================================================================
+   generate_javascript_utils  (Javascript/utils/utils.sas - untouched)
+   ============================================================================ */
+function showLoading() { document.getElementById("loading").style.display = "flex"; }
+function hideLoading() { document.getElementById("loading").style.display = "none"; }
+function showNotification(message, type) {
+  if (!type) type = "success";
+  var notification = document.getElementById("notification");
+  var notificationText = document.getElementById("notification-text");
+  notification.className = "notification " + type;
+  notificationText.textContent = message;
+  notification.classList.add("show");
+  setTimeout(function() { notification.classList.remove("show"); }, 4000);
+}
+function closeModal() { document.getElementById("reportModal").classList.remove("show"); }
+
+/* ============================================================================
+   buildRAF.sas - %buildRAF (REWRITTEN only where domain/category split bars
+   read live rollups instead of the old ragSplitPlaceholder, and the
+   "Lower is better" banner is gone - see that file for the full rationale)
+   ============================================================================ */
+const RAFUI = {
+  getDomainTitle(domainKey) {
+    const found = riskDomainsConfig.find(d => d.key === domainKey);
+    return found ? found.title : domainKey;
+  },
+  getCategoryTitle(categoryKey) {
+    const found = riskCategoriesConfig.find(c => c.key === categoryKey);
+    return found ? found.title : categoryKey;
+  },
+  getDomainForCategory(categoryKey) {
+    const found = riskDomainsConfig.find(d => d.categories.includes(categoryKey));
+    return found ? found.key : null;
+  },
+  renderBreadcrumb(crumbs) {
+    const trail = document.getElementById("raf-breadcrumb-trail");
+    if (!trail) return;
+    let html = "";
+    crumbs.forEach((crumb, idx) => {
+      const isLast = idx === crumbs.length - 1;
+      if (idx > 0) html += "<span> &rsaquo; </span>";
+      if (!isLast && crumb.onClick) {
+        html += "<b onclick=\"" + crumb.onClick + "\">" + escapeHtml(crumb.label) + "</b>";
+      } else {
+        html += "<span class=\"crumb-current\">" + escapeHtml(crumb.label) + "</span>";
+      }
+    });
+    trail.innerHTML = html;
+  },
+  setTitle(title, subtitle) {
+    const t = document.getElementById("raf-page-title");
+    const s = document.getElementById("raf-page-subtitle");
+    if (t) t.textContent = title;
+    if (s) s.textContent = subtitle || "";
+  }
+};
+
+const RAFRouting = {
+  currentDomain: "financial",
+  render(html) {
+    const panel = document.getElementById("raf-main-panel");
+    if (panel) panel.innerHTML = html;
+  },
+  showDashboard() {
+    this.render(buildRafDashboardHTML());
+    RAFUI.renderBreadcrumb([{ label: "CRO Dashboard" }]);
+    const totalIndicators = Object.values(appetiteMetricsConfig).reduce((sum, arr) => sum + arr.length, 0);
+    // "CRO Dashboard" (matches the breadcrumb label just above), not "Risk
+    // Appetite Framework" - that text now belongs solely to the shared
+    // shell header set once in getRAFHTML(), so it isn't shown twice.
+    RAFUI.setTitle("CRO Dashboard", riskCategoriesConfig.length + " risk areas - " + totalIndicators + " indicators tracked against Board-approved appetite limits.");
+    raf_updateFilterNote();
+  },
+  showDomains() {
+    this.render(buildRafDomainsHTML());
+    RAFUI.renderBreadcrumb([
+      { label: "CRO Dashboard", onClick: "RAFRouting.showDashboard()" },
+      { label: "Risk Domains" }
+    ]);
+    const domTotalIndicators = Object.values(appetiteMetricsConfig).reduce((sum, arr) => sum + arr.length, 0);
+    RAFUI.setTitle("Risk Domains", riskCategoriesConfig.length + " risk areas grouped into " + riskDomainsConfig.length + " domains - " + domTotalIndicators + " indicators - Q2-2026. Choose a domain to see its risk areas.");
+  },
+  showDomain(domainKey) {
+    this.currentDomain = domainKey;
+    this.render(buildRafCategoriesHTML(domainKey));
+    const domain = riskDomainsConfig.find(d => d.key === domainKey);
+    const catCount = domain ? domain.categories.length : 0;
+    const indCount = domain ? domain.categories.reduce((sum, key) => {
+      const c = riskCategoriesConfig.find(x => x.key === key);
+      return sum + (c ? c.indicatorCount : 0);
+    }, 0) : 0;
+    RAFUI.renderBreadcrumb([
+      { label: "CRO Dashboard", onClick: "RAFRouting.showDashboard()" },
+      { label: "Risk Domains", onClick: "RAFRouting.showDomains()" },
+      { label: RAFUI.getDomainTitle(domainKey) }
+    ]);
+    RAFUI.setTitle(RAFUI.getDomainTitle(domainKey), catCount + " risk areas - " + indCount + " indicators - Q2-2026. Click a category to view its metrics.");
+  },
+  showCategory(categoryKey) {
+    this.render(buildRafCategoryDetailHTML(categoryKey));
+    const domainKey = RAFUI.getDomainForCategory(categoryKey) || this.currentDomain;
+    this.currentDomain = domainKey;
+    RAFUI.renderBreadcrumb([
+      { label: "CRO Dashboard", onClick: "RAFRouting.showDashboard()" },
+      { label: "Risk Domains", onClick: "RAFRouting.showDomains()" },
+      { label: RAFUI.getDomainTitle(domainKey), onClick: "RAFRouting.showDomain('" + domainKey + "')" },
+      { label: RAFUI.getCategoryTitle(categoryKey) }
+    ]);
+    RAFUI.setTitle(RAFUI.getCategoryTitle(categoryKey), "");
+  }
+};
+
+function getRAFHTML() {
+  // Shared shell header (components.sas) is retitled here so it reads
+  // "Risk Appetite Framework" while on this route instead of its default
+  // "Risk Management Dashboard" - updateContent() resets it back to the
+  // default before every route render, so leaving RAF for another route
+  // un-stales it automatically. This is also now the ONLY place "Risk
+  // Appetite Framework" appears - the topbar brand text below and the CRO
+  // Dashboard sub-view's own in-page title were the duplicates and have
+  // been removed/reworded accordingly.
+  var shellTitleEl = document.getElementById("page-title");
+  if (shellTitleEl) shellTitleEl.textContent = "Risk Appetite Framework";
+  let html = RAF_STYLE_BLOCK;
+  html += RAF_ICON_DEFS;
+  html += '<div class="raf-app">';
+  html += '  <div class="raf-topbar">';
+  html += '    <div class="raf-topbar-brand">';
+  html += '      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">';
+  html += '        <path d="M9 17 L14 9 L18 13 L24 5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
+  html += '        <circle cx="24" cy="5" r="2.3" fill="#93c5fd"/>';
+  html += '      </svg>';
+  html += '    </div>';
+  html += '    <span class="raf-cro-badge">CRO Only</span>';
+  html += '  </div>';
+  html += '  <div class="raf-body">';
+  html += '    <div class="crumb" id="raf-breadcrumb-trail"></div>';
+  html += '    <h2 class="raf-pagetitle" id="raf-page-title"></h2>';
+  html += '    <p class="raf-pagesub" id="raf-page-subtitle"></p>';
+  html += '    <div id="raf-main-panel"></div>';
+  html += '  </div>';
+  html += '</div>';
+  setTimeout(function () { RAFRouting.showDashboard(); }, 0);
+  return html;
+}
+
+function buildRafDashboardHTML() {
+  let html = "";
+  html += '<div class="filter-panel">';
+  html += '  <div class="filter-fields">';
+  html += '    <div class="filter-field"><label for="rafFrequency">Frequency</label>';
+  html += '      <select id="rafFrequency" onchange="raf_updateFilterNote()">';
+  html += '        <option>Daily</option><option selected>Quarterly</option><option>Monthly</option>';
+  html += '      </select>';
+  html += '    </div>';
+  html += '    <div class="filter-field"><label for="rafCriticality">Criticality</label>';
+  html += '      <select id="rafCriticality" onchange="raf_updateFilterNote()">';
+  html += '        <option selected>All</option><option>Level 1</option><option>Level 2A</option><option>Level 2B</option>';
+  html += '      </select>';
+  html += '    </div>';
+  html += '    <div class="filter-field"><label for="rafRiskArea">Risk Area</label>';
+  html += '      <select id="rafRiskArea" onchange="raf_updateFilterNote()">';
+  html += '        <option selected>All</option>';
+  html += riskCategoriesConfig.map(c => '<option>' + escapeHtml(c.title) + '</option>').join("");
+  html += '      </select>';
+  html += '    </div>';
+  html += '  </div>';
+  html += '  <div class="note-box">';
+  html += '    <div class="note-box-title">Note on the dashboard</div>';
+  html += '    <div class="note-line">Frequency, when selected as <b>Daily</b> - displays the last 31 days / until today (whichever is lower)</div>';
+  html += '    <div class="note-line">Frequency, when selected as <b>Monthly</b> - displays the last 12 months of the current reporting year</div>';
+  html += '    <div class="note-line">Frequency, when selected as <b>Quarter</b> - displays the last 4 quarters of the current reporting year</div>';
+  html += '  </div>';
+  html += '  <div class="filter-note" id="rafFilterNote"></div>';
+  html += '</div>';
+  html += '<div class="raf-tabs" role="tablist">';
+  html += '  <button type="button" class="raf-tab active" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap - by Criticality</button>';
+  html += '  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap - by Ownership</button>';
+  html += '  <button type="button" class="raf-tab" data-raf-tab="trend" onclick="raf_showTab(&apos;trend&apos;)">Risk Indicator Trend Analysis - by Pillar</button>';
+  html += '  <button type="button" class="raf-tab" onclick="RAFRouting.showDomains()">Risk Domains &rarr;</button>';
+  html += '</div>';
+  html += '<div class="raf-tabpanel active" id="raf-tabpanel-heatmap">';
+  html += '  <div class="zone-panel"><div class="zone-body">';
+  html += '    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>';
+  html += filterBarHtml("raf-heatmap-table");
+  html += '    <div style="overflow-x:auto;">' + RAFDashboardView.renderHeatmapByCriticality().replace('<table class="heatmap-table">', '<table class="heatmap-table" id="raf-heatmap-table">') + '</div>';
+  html += '    <div style="margin-top:10px; text-align:right;"><button class="btn" onclick="exportTableToExcel(&apos;raf-heatmap-table&apos;,&apos;Heatmap by Criticality&apos;,&apos;RAF_Heatmap&apos;)">Export to Excel</button></div>';
+  html += '  </div></div>';
+  html += '</div>';
+  html += '<div class="raf-tabpanel" id="raf-tabpanel-treemap">';
+  html += '  <div class="zone-panel">';
+  html += '    <div class="zone-toolbar"><div class="zone-select"><label for="rafOwner">Ownership</label>';
+  html += '      <select id="rafOwner" onchange="raf_updateTreemapOwner(this)">';
+  html += croDashboardConfig.ownershipOptions.map(o => '<option>' + escapeHtml(o) + '</option>').join("");
+  html += '      </select>';
+  html += '    </div></div>';
+  html += '    <div class="zone-body">';
+  html += '      <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones for the selected owner. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>';
+  html += '      <div id="rafTreemapZoneBody">' + RAFDashboardView.renderTreemapByOwnership(croDashboardConfig.ownershipOptions[0]) + '</div>';
+  html += '    </div>';
+  html += '  </div>';
+  html += '</div>';
+  html += '<div class="raf-tabpanel" id="raf-tabpanel-trend">';
+  html += '  <div class="zone-panel"><div class="zone-body">';
+  html += '    <p class="zone-desc">Count of indicators in Watch or Breach (Amber + Red), Pillar 1 vs. Pillar 2 (sheet Comments = P1/P2). The 2026-06-30 point is live from the sheet; earlier points are placeholders pending a historical data connection.</p>';
+  html += RAFDashboardView.renderTrendByPillar();
+  html += '  </div></div>';
+  html += '</div>';
+  return html;
+}
+
+function raf_showTab(tabKey) {
+  document.querySelectorAll(".raf-tab").forEach(function (el) {
+    el.classList.toggle("active", el.getAttribute("data-raf-tab") === tabKey);
+  });
+  document.querySelectorAll(".raf-tabpanel").forEach(function (el) {
+    el.classList.toggle("active", el.id === "raf-tabpanel-" + tabKey);
+  });
+}
+function raf_updateFilterNote() {
+  const freqEl = document.getElementById("rafFrequency");
+  const critEl = document.getElementById("rafCriticality");
+  const areaEl = document.getElementById("rafRiskArea");
+  const note = document.getElementById("rafFilterNote");
+  if (!freqEl || !note) return;
+  const periodEnd = { Daily: RAFUtils.getTodayDate(), Monthly: "2026-06-30", Quarterly: "2026-06-30" };
+  const freq = freqEl.value, crit = critEl.value, area = areaEl.value;
+  note.innerHTML = "Filter selection: report generated for the period <b>" + freq + " - "
+    + RAFUtils.formatDate(periodEnd[freq]) + "</b>, <b>" + crit + "</b> Criticality, showing <b>"
+    + area + "</b> Risk Area" + (area === "All" ? "s" : "") + ".";
+}
+function raf_updateTreemapOwner(select) {
+  const body = document.getElementById("rafTreemapZoneBody");
+  if (body) body.innerHTML = RAFDashboardView.renderTreemapByOwnership(select.value);
+}
+
+function buildRafDomainsHTML() {
+  let html = '<div class="domain-grid">';
+  riskDomainsConfig.forEach(domain => {
+    const metrics = domain.categories.flatMap(key => appetiteMetricsConfig[key] || []);
+    const counts = RAFStatus.rollUpStatusCounts(metrics);
+    const total = counts.green + counts.amber + counts.red;
+    const pct = n => total ? ((n / total) * 100).toFixed(1) : 0;
+    const indicatorCount = domain.categories.reduce((sum, key) => {
+      const cat = riskCategoriesConfig.find(c => c.key === key);
+      return sum + (cat ? cat.indicatorCount : 0);
+    }, 0);
+    html += '<div class="domain-card" onclick="RAFRouting.showDomain(&apos;' + domain.key + '&apos;)">';
+    html += '  <div class="domain-head"><div class="domain-icon">' + domain.icon + '</div>';
+    html += '    <div><div class="domain-title">' + escapeHtml(domain.title) + '</div>';
+    html += '    <div class="domain-meta">' + domain.categories.length + ' risk areas - ' + indicatorCount + ' indicators</div></div>';
+    html += '  </div>';
+    html += '  <div class="domain-desc">' + escapeHtml(domain.description) + '</div>';
+    html += '  <div class="domain-split">';
+    html += '    <span style="width:' + pct(counts.green) + '%; background:var(--good)"></span>';
+    html += '    <span style="width:' + pct(counts.amber) + '%; background:var(--warning)"></span>';
+    html += '    <span style="width:' + pct(counts.red) + '%; background:var(--critical)"></span>';
+    html += '  </div>';
+    html += '  <div class="domain-split-caption">' + counts.green + ' within tolerance - ' + counts.amber + ' watch - '
+      + counts.red + ' breach</div>';
+    html += '  <div class="domain-foot"><span class="domain-link">Explore &rarr;</span></div>';
+    html += '</div>';
+  });
+  html += "</div>";
+  return html;
+}
+
+function buildRafCategoriesHTML(domainKey) {
+  const categories = riskCategoriesConfig.filter(c => c.domain === domainKey);
+  let html = '<div class="tiles">';
+  categories.forEach(cat => {
+    const counts = RAFStatus.rollUpStatusCounts(appetiteMetricsConfig[cat.key] || []);
+    const total = counts.green + counts.amber + counts.red;
+    const pct = n => total ? ((n / total) * 100).toFixed(1) : 0;
+    const parts = [];
+    if (counts.green) parts.push(counts.green + " within tolerance");
+    if (counts.amber) parts.push(counts.amber + " watch");
+    if (counts.red) parts.push(counts.red + " breach");
+    html += '<div class="tile" onclick="RAFRouting.showCategory(&apos;' + cat.key + '&apos;)">';
+    html += '  <div class="tile-head"><div class="tile-icon">' + cat.icon + '</div>';
+    html += '    <div><div class="tile-title">' + escapeHtml(cat.title) + '</div>';
+    html += '    <div class="tile-count">' + cat.indicatorCount + ' indicators</div></div></div>';
+    html += '  <div class="tile-desc">' + escapeHtml(cat.description) + '</div>';
+    html += '  <div class="tile-split">';
+    html += '    <span style="width:' + pct(counts.green) + '%; background:var(--good)"></span>';
+    html += '    <span style="width:' + pct(counts.amber) + '%; background:var(--warning)"></span>';
+    html += '    <span style="width:' + pct(counts.red) + '%; background:var(--critical)"></span>';
+    html += '  </div>';
+    html += '  <div class="tile-split-caption">' + parts.join(" - ") + '</div>';
+    html += '  <div class="tile-foot"><span class="tile-owner">' + escapeHtml(cat.owner) + '</span><span class="tile-freq">' + escapeHtml(cat.frequency) + '</span></div>';
+    html += '</div>';
+  });
+  html += "</div>";
+  return html;
+}
+
+function buildRafCategoryDetailHTML(categoryKey) {
+  const metrics = appetiteMetricsConfig[categoryKey];
+  const cat = riskCategoriesConfig.find(c => c.key === categoryKey);
+  if (!metrics || !cat) return '<div class="detail-panel"><p>No metrics configured for this risk area.</p></div>';
+  const historyCount = RAFHistory.count(categoryKey);
+  let html = '<div class="detail-panel">';
+  html += '  <div class="detail-head"><div>';
+  html += '    <h3>' + escapeHtml(cat.title) + ' - Appetite Metrics</h3>';
+  html += '    <div class="detail-meta">';
+  html += '      <span>Owner: <b>' + escapeHtml(cat.owner) + '</b></span>';
+  html += '      <span>Review Committee: <b>' + escapeHtml(cat.committee) + '</b></span>';
+  html += '      <span>Frequency: <b>' + escapeHtml(cat.frequency) + '</b></span>';
+  html += '      <span>Period: <b>Q2-2026</b></span>';
+  html += '    </div></div>';
+  html += '    <div>';
+  html += '      <button class="btn" onclick="RAFReports.runCategory(&apos;' + categoryKey + '&apos;)">Run Category</button>';
+  html += '      <button class="btn ghost" onclick="RAFReports.viewHistory(&apos;' + categoryKey + '&apos;)">View History (' + historyCount + ')</button>';
+  html += '    </div>';
+  html += '  </div>';
+  html += '  <div id="raf-metric-cards-' + categoryKey + '">';
+  html += metrics.map(m => RAFResults.renderMetricCard(m)).join("");
+  html += '  </div>';
+  html += '  <div style="margin-top:4px; display:flex; justify-content:flex-end;">';
+  html += '    <button class="btn ghost" onclick="exportMetricCardsToExcel(&apos;' + categoryKey + '&apos;)">Export to Excel</button>';
+  html += '  </div>';
+  html += '</div>';
+  return html;
+}
+
+function raf_toggleDashboardDropdown(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById("rafDashboardDropdownMenu");
+  if (!menu) return;
+  menu.style.display = (menu.style.display === "block") ? "none" : "block";
+}
+function raf_closeDashboardDropdown() {
+  const menu = document.getElementById("rafDashboardDropdownMenu");
+  if (menu) menu.style.display = "none";
+  raf_closeCroSubmenu();
+}
+function raf_toggleCroSubmenu(event) {
+  if (event) event.stopPropagation();
+  const sub = document.getElementById("rafCroSubmenuMenu");
+  if (!sub) return;
+  sub.style.display = (sub.style.display === "block") ? "none" : "block";
+}
+function raf_closeCroSubmenu() {
+  const sub = document.getElementById("rafCroSubmenuMenu");
+  if (sub) sub.style.display = "none";
+}
+document.addEventListener("click", function (e) {
+  const wrap = document.getElementById("rafDashboardDropdown");
+  if (wrap && !wrap.contains(e.target)) raf_closeDashboardDropdown();
+});
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") raf_closeDashboardDropdown();
+});
+
+/* ============================================================================
+   buildUnderProcessPlaceholders.sas (untouched)
+   ============================================================================ */
+function raf_buildUnderProcessHTML(title) {
+  let html = "";
+  html += '<div class="page-header" style="margin-bottom:0;">';
+  html += '<h1 class="page-title">' + title + '</h1>';
+  html += '<p class="page-subtitle">This page is under process. Check back soon.</p>';
+  html += '</div>';
+  return html;
+}
+function getMarketRiskPlaceholderHTML() { return raf_buildUnderProcessHTML("Market Risk"); }
+function getCreditRiskPlaceholderHTML() { return raf_buildUnderProcessHTML("Credit Risk"); }
+function getOperationalRiskPlaceholderHTML() { return raf_buildUnderProcessHTML("Operational Risk"); }
+
+/* ============================================================================
+   MOCKUP-ONLY: honest stand-ins for every ERMS route this change does not
+   touch, so the navbar's other links don't throw instead of silently doing
+   nothing. Each is clearly labelled as outside this preview's scope - none
+   of this is invented dashboard content.
+   ============================================================================ */
+function raf_buildOutOfScopeHTML(title, note) {
+  let html = '<div class="page-header" style="margin-bottom:0;">';
+  html += '<h1 class="page-title">' + title + '</h1>';
+  html += '<p class="page-subtitle">' + note + '</p>';
+  html += '</div>';
+  html += '<div class="mockup-scope-note" style="margin-top:18px;">This route is unchanged by the Risk Domain work and is not reproduced in this preview - it exists in the real ERMS app.</div>';
+  return html;
+}
+function getDashboardTableHTML() { return raf_buildOutOfScopeHTML("ERMS Dashboard", "Regulatory/compliance dashboard table."); }
+function getRiskCategoriesHTML() { return raf_buildOutOfScopeHTML("Risk Categories", "The 15 non-RAF risk-module tiles (Regulatory, Credit, Operational, Market, Liquidity, ICAAP, ILAAP, SAIBOR)."); }
+function getAnalyticsHTML() { return raf_buildOutOfScopeHTML("Analytics", "ERMS analytics module."); }
+function getRegulatoryReportsHTML() { return raf_buildOutOfScopeHTML("Regulatory Reports", "Regulatory report generation module."); }
+function getSaiborHTML() { return raf_buildOutOfScopeHTML("SAIBOR / SAIBID", "SAIBOR/SAIBID reporting module."); }
+function refreshDashboardData() { /* no-op stand-in - the real dashboard module is out of scope here */ }
+
+/* ============================================================================
+   generate_javascript_routing  (REWRITTEN only in the default landing route -
+   see the note at the top of this file - and trimmed to the routes actually
+   reproduced here; every other route in the real routes object points at the
+   honest stand-ins above instead of the real, out-of-scope module.)
+   ============================================================================ */
+var currentRoute = "#risk-appetite-framework";
+var routes = {
+  "#dashboard": getDashboardTableHTML,
+  "#risk-categories": getRiskCategoriesHTML,
+  "#analytics": getAnalyticsHTML,
+  "#regulatory-reports": getRegulatoryReportsHTML,
+  "#saibor-saibid": getSaiborHTML,
+  "#risk-appetite-framework": getRAFHTML,
+  "#market": getMarketRiskPlaceholderHTML,
+  "#credit": getCreditRiskPlaceholderHTML,
+  "#operational": getOperationalRiskPlaceholderHTML
+};
+function showRoute(route) {
+  console.log("Navigating to:", route);
+  currentRoute = route;
+  updateContent();
+  if (window.history && window.history.pushState) {
+    window.history.pushState(null, null, route);
+  }
+}
+function updateContent() {
+  var mainPanel = document.getElementById("main-panel");
+  if (!mainPanel) return;
+  var pageTitleEl = document.getElementById("page-title");
+  if (pageTitleEl) pageTitleEl.textContent = "Risk Management Dashboard";
+  var routeFunction = routes[currentRoute];
+  console.log(routeFunction);
+  if (routeFunction && typeof routeFunction === "function") {
+    mainPanel.innerHTML = routeFunction();
+    initializeRouteFunctionality();
+    console.log("HHHH");
+  } else {
+    mainPanel.innerHTML = "<div style=\"text-align: center; padding: 50px;\"><h2>Page Not Found</h2><p>The requested page could not be found.</p></div>";
+  }
+}
+function initializeRouteFunctionality() {
+  if (currentRoute === "#dashboard") {
+    setTimeout(function() {
+      refreshDashboardData();
+    }, 100);
+  }
+}
+window.addEventListener("popstate", function() {
+  currentRoute = window.location.hash || "#risk-appetite-framework";
+  updateContent();
+});
+document.addEventListener("DOMContentLoaded", function() {
+  currentRoute = window.location.hash || "#risk-appetite-framework";
+  updateContent();
+});
+</script>

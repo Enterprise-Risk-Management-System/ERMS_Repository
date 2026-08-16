@@ -34,6 +34,13 @@
     put 'function updateContent() {';
     put '  var mainPanel = document.getElementById("main-panel");';
     put '  if (!mainPanel) return;';
+    /* Reset the shared shell header back to its default before every route
+       render, so a route that retitles it (see buildRAF.sas''s
+       getRAFHTML()) never leaves it stuck on navigation away - the route
+       function called just below can still override it right back if that
+       route wants to. */
+    put '  var pageTitleEl = document.getElementById("page-title");';
+    put '  if (pageTitleEl) pageTitleEl.textContent = "Risk Management Dashboard";';
     put '  var routeFunction = routes[currentRoute];';
     put '  console.log(routeFunction);';
     put '  if (routeFunction && typeof routeFunction === "function") {';

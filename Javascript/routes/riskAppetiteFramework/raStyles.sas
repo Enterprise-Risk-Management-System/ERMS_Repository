@@ -120,36 +120,28 @@
     put '.raf-app .zone-select { display: flex; align-items: center; gap: 8px; }';
     put '.raf-app .zone-select label { font-size: .72rem; color: var(--text-2); font-weight: 700; }';
 
-    put '.raf-app .ind-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }';
-    put '.raf-app .ind-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 12px;';
-    put '  padding: 13px; cursor: pointer; transition: border-color .2s; }';
-    put '.raf-app .ind-card:hover { border-color: var(--brand-2); }';
-    put '.raf-app .ind-label { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }';
-    put '.raf-app .ind-value { display: block; font-size: .8rem; font-weight: 700; color: var(--text-1); margin: 1px 0 7px; line-height: 1.3; }';
-    put '.raf-app .ind-table { width: 100%; border-collapse: collapse; font-size: .76rem; }';
-    put '.raf-app .ind-table th { text-align: left; font-size: .6rem; font-weight: 700; text-transform: uppercase;';
-    put '  color: var(--text-3); padding-bottom: 5px; border-bottom: 1.5px solid var(--border); }';
-    put '.raf-app .ind-table th:last-child, .raf-app .ind-table td:last-child { text-align: right; }';
-    put '.raf-app .ind-table td { padding: 6px 0; border-bottom: 1px solid var(--border); color: var(--text-2); }';
-    put '.raf-app .ind-table tr:last-child td { border-bottom: none; }';
-    put '.raf-app .rag-pill { display: inline-block; padding: 2px 9px; border-radius: 5px; font-weight: 800; color: var(--text-1); }';
-    put '.raf-app .rag-pill.good { background: var(--good-tint); }';
-    put '.raf-app .rag-pill.warning { background: var(--warning-tint); }';
-    put '.raf-app .rag-pill.critical { background: var(--critical-tint); }';
+    /* .ind-*/.rag-pill (Critical Risk Indicators cards) removed along with
+       that zone - not currently required; see buildRAF.sas/
+       croDashboardView.sas/croDashboardConfig.sas for the matching removal. */
 
-    put '.raf-app .heatmap-table { width: 100%; border-collapse: collapse; font-size: .8rem; }';
+    /* table-layout:fixed + an explicit first-column width makes the now
+       wider (one row per criticality, periods spread out as column groups)
+       heatmap distribute its remaining columns evenly across the full
+       panel width instead of shrink-wrapping to content - see
+       croDashboardView.sas for the render-side half of this change.
+       Coloured .num header cells (not just body cells) tie each column
+       group visually to the data beneath it. */
+    put '.raf-app .heatmap-table { width: 100%; border-collapse: collapse; font-size: .8rem; table-layout: fixed; }';
     put '.raf-app .heatmap-table th { background: var(--surface-2); text-transform: uppercase; font-size: .62rem;';
-    put '  color: var(--text-3); font-weight: 800; padding: 8px 10px; text-align: left; border-bottom: 2px solid var(--border); }';
+    put '  color: var(--text-3); font-weight: 800; padding: 10px; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }';
     put '.raf-app .heatmap-table th.num, .raf-app .heatmap-table td.num { text-align: center; }';
-    put '.raf-app .heatmap-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); }';
+    put '.raf-app .heatmap-table th:first-child, .raf-app .heatmap-table td:first-child { width: 17%; }';
+    put '.raf-app .heatmap-table td { padding: 10px; border-bottom: 1px solid var(--border); }';
     put '.raf-app .heatmap-table td.crit-cell { font-weight: 800; color: var(--brand); background: var(--brand-tint); vertical-align: middle; }';
-    put '.raf-app .heatmap-table td.num { font-weight: 800; }';
-    put '.raf-app .heatmap-table td.num.good { background: var(--good-tint); color: var(--text-1); }';
-    put '.raf-app .heatmap-table td.num.warning { background: var(--warning-tint); color: var(--text-1); }';
-    put '.raf-app .heatmap-table td.num.critical { background: var(--critical-tint); color: var(--text-1); }';
-    put '.raf-app .trend-icon { width: 16px; height: 16px; }';
-    put '.raf-app .trend-icon.up { color: var(--good); }';
-    put '.raf-app .trend-icon.down { color: var(--critical); }';
+    put '.raf-app .heatmap-table td.num { font-weight: 800; font-size: .92rem; }';
+    put '.raf-app .heatmap-table td.num.good, .raf-app .heatmap-table th.num.good { background: var(--good-tint); color: var(--text-1); }';
+    put '.raf-app .heatmap-table td.num.warning, .raf-app .heatmap-table th.num.warning { background: var(--warning-tint); color: var(--text-1); }';
+    put '.raf-app .heatmap-table td.num.critical, .raf-app .heatmap-table th.num.critical { background: var(--critical-tint); color: var(--text-1); }';
 
     put '.raf-app .table-toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }';
     put '.raf-app .table-filter-input { flex: 1; min-width: 220px; font-family: inherit; font-size: .8rem; padding: 7px 10px;';
@@ -175,7 +167,11 @@
     /* Fluid SVG - the chart keeps its logical 560x210 coordinate system via
        viewBox but stretches to fill the tab's full width instead of sitting
        at a fixed 560px inside a much wider panel. */
-    put '.raf-app .trend-chart-wrap { overflow-x: auto; }';
+    /* Capped at the chart's own viewBox width (560) so it renders at its
+       natural size on wide panels instead of stretching edge-to-edge -
+       still shrinks further on narrow screens since width stays 100% up
+       to that cap. */
+    put '.raf-app .trend-chart-wrap { overflow-x: auto; max-width: 560px; }';
     put '.raf-app .trend-chart-wrap svg { width: 100%; height: auto; display: block; }';
 
     put '.raf-app .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 14px; }';
@@ -230,6 +226,12 @@
     put '.raf-app .chip.level { background: var(--brand-tint); color: var(--brand); }';
     put '.raf-app .chip.comment { background: var(--steel-tint); color: var(--steel); }';
     put '.raf-app .metric-current .num { font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; }';
+    /* The Utilization number's colour always matches its RAG status - same
+       cssClass the status chip and the meter pointer use, so all three can
+       never disagree (see RAFResults.renderMetricCard). */
+    put '.raf-app .metric-current .num.good { color: var(--good); }';
+    put '.raf-app .metric-current .num.warning { color: var(--warning); }';
+    put '.raf-app .metric-current .num.critical { color: var(--critical); }';
     put '.raf-app .metric-current .ph { display: block; font-size: .58rem; font-weight: 700; letter-spacing: .05em;';
     put '  text-transform: uppercase; color: var(--text-3); margin-top: 2px; }';
 

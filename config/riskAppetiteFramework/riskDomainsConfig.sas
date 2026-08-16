@@ -1,58 +1,54 @@
 /* ============================================================================
    RISK DOMAIN CONFIGURATION
-   Drives the 4 "Risk Domains" grouping cards (route #domains). Groups the 15
-   risk categories from the Excel sheet into 4 sets so no page ever shows
-   more than ~7 category tiles at once.
+   Drives the "Risk Domains" grouping cards (route #domains).
+
+   NOW FULLY DYNAMIC: every row here is emitted from work.raf_domains_final
+   (one pre-built JS object literal per row, in its `js_line`/`js_len`
+   fields), built by rafDataLoader.sas from the live RAF_Q2_2026.xlsx on
+   this run - see that file for how domain membership is decided (a small
+   structural lookup by Risk Area, since the sheet itself carries no "Risk
+   Domain" column) and for the "Other Risks" catch-all any unrecognized
+   Risk Area falls into instead of breaking the page.
 
    NOTE ON NAMING: this grouping is deliberately called "Domain", never
    "Pillar" - "Pillar" is reserved elsewhere in this app for the regulatory
    Pillar 1 / Pillar 2 classification (see the `comment` tag on each metric
-   in appetiteMetricsConfig.sas, e.g. "P1"/"P2"). The domain grouping itself
-   is a structural navigation aid, not sheet data - flag with the business
-   owner if a different grouping is preferred.
+   in appetiteMetricsConfig.sas, e.g. "P1"/"P2").
 
-   Each domain's `categories` array is the single source of truth for which
-   category keys belong to it; riskCategoriesConfig.sas assigns each category
-   the same key back via its own `domain` field. JS derives the reverse
-   lookup (category -> domain) from this array at runtime - see RAFUI.
+   The former `ragSplitPlaceholder` illustrative counts are gone - the RAG
+   split shown on each domain card is now computed live from the domain's
+   real metrics via RAFStatus.rollUpStatusCounts() in buildRAF.sas.
+
+   Uses a DO/SET-POINT= loop (not a nested DATA step) because this macro's
+   `put`s run as part of ERMS_Application.sas's one big enclosing
+   `data _null_; file _webout; ... run;` step - see rafDataLoader.sas's
+   file header for why the actual data prep can't happen here. work.raf_
+   domains_final and &RAF_DOMAIN_NOBS. are built by %raf_load_excel_data,
+   called once before that enclosing step starts. $VARYING + the trailing
+   @ hold write each row's pre-trimmed js_line without its declared-length
+   blank padding, then either a comma or a plain line break closes it.
    ============================================================================ */
 %macro riskDomainsConfig;
+    /* riskDomainsConfig / riskCategoriesConfig / appetiteMetricsConfig all
+       run inside the ONE enclosing data _null_ step (ERMS_Application.sas),
+       so their SET ... POINT= reads all share a single PDV. A handful of
+       column names exist in more than one of work.raf_domains_final /
+       raf_categories_final / raf_metrics_final with different declared
+       lengths (e.g. "key" is $20 in the domains table but $80 in the
+       categories table). Whichever SET statement runs first would
+       otherwise silently fix that shorter length for the rest of the
+       step, truncating the others. Declaring the widest length needed by
+       any of the three, here, before the first SET below runs, avoids
+       that - this must stay the first of the three macros raf_config_new
+       calls. */
+    length key title description $400 js_line $6000 committee frequency $2000;
+
     put 'const riskDomainsConfig = Object.freeze([';
-    put '  {';
-    put '    key: "financial",';
-    put '    title: "Financial Risks",';
-    put '    description: "Capital adequacy, concentration, credit, liquidity, market and earnings - the core balance-sheet risk domains.",';
-    put '    icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2.3 10 L12 4 L21.7 10 Z\"/><line x1=\"3\" y1=\"21\" x2=\"21\" y2=\"21\"/><line x1=\"4.5\" y1=\"21\" x2=\"4.5\" y2=\"10.5\"/><line x1=\"9.5\" y1=\"21\" x2=\"9.5\" y2=\"10.5\"/><line x1=\"14.5\" y1=\"21\" x2=\"14.5\" y2=\"10.5\"/><line x1=\"19.5\" y1=\"21\" x2=\"19.5\" y2=\"10.5\"/></svg>",';
-    put '    route: "#domain/financial",';
-    put '    categories: ["capital","concentration","credit","liquidity","market","irrbb","earnings"],';
-    put '    ragSplitPlaceholder: { good: 36, watch: 11, breach: 3, regulatoryBreach: 1 }';
-    put '  },';
-    put '  {';
-    put '    key: "nonfinancial",';
-    put '    title: "Non-Financial Risks",';
-    put '    description: "Operational, fraud, cyber, legal and model risk - how well bank processes and controls hold up.",';
-    put '    icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"4.3\"/><line x1=\"12\" y1=\"2.5\" x2=\"12\" y2=\"5.3\"/><line x1=\"12\" y1=\"18.7\" x2=\"12\" y2=\"21.5\"/><line x1=\"2.5\" y1=\"12\" x2=\"5.3\" y2=\"12\"/><line x1=\"18.7\" y1=\"12\" x2=\"21.5\" y2=\"12\"/><line x1=\"5.4\" y1=\"5.4\" x2=\"7.4\" y2=\"7.4\"/><line x1=\"16.6\" y1=\"16.6\" x2=\"18.6\" y2=\"18.6\"/><line x1=\"5.4\" y1=\"18.6\" x2=\"7.4\" y2=\"16.6\"/><line x1=\"16.6\" y1=\"7.4\" x2=\"18.6\" y2=\"5.4\"/></svg>",';
-    put '    route: "#domain/nonfinancial",';
-    put '    categories: ["operational","fraud","cyber","legal","model"],';
-    put '    ragSplitPlaceholder: { good: 2, watch: 1, breach: 1, regulatoryBreach: 1 }';
-    put '  },';
-    put '  {';
-    put '    key: "peopleconduct",';
-    put '    title: "People, Conduct & Reputational Risk",';
-    put '    description: "Workforce, conduct and reputational indicators - how the bank is run and how it is perceived.",';
-    put '    icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"10\" cy=\"8\" r=\"4\"/><path d=\"M2.5 20.5 C2.5 16.4 6.1 13.5 10.5 13.5 C14.9 13.5 18.5 16.4 18.5 20.5\"/><path d=\"M18 2.5 L18.9 4.3 L20.9 4.6 L19.4 6 L19.8 8 L18 7 L16.2 8 L16.6 6 L15.1 4.6 L17.1 4.3 Z\"/></svg>",';
-    put '    route: "#domain/peopleconduct",';
-    put '    categories: ["people","reputational"],';
-    put '    ragSplitPlaceholder: { good: 6, watch: 1, breach: 0, regulatoryBreach: 0 }';
-    put '  },';
-    put '  {';
-    put '    key: "shariah",';
-    put '    title: "Shariah & Compliance Risk",';
-    put '    description: "Sharia non-compliance exposure across Islamic banking activities.",';
-    put '    icon: "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"26\" height=\"26\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14.5 3 A9 9 0 1 0 14.5 21 A7.2 7.2 0 1 1 14.5 3 Z\"/></svg>",';
-    put '    route: "#domain/shariah",';
-    put '    categories: ["shariah"],';
-    put '    ragSplitPlaceholder: { good: 1, watch: 0, breach: 0, regulatoryBreach: 0 }';
-    put '  }';
+    do _raf_i = 1 to &RAF_DOMAIN_NOBS.;
+        set work.raf_domains_final point=_raf_i;
+        put js_line $varying6000. js_len @;
+        if _raf_i < &RAF_DOMAIN_NOBS. then put ',';
+        else put;
+    end;
     put ']);';
 %mend riskDomainsConfig;

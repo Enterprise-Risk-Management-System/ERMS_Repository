@@ -24,7 +24,20 @@
     put '<li style="position:relative;" id="rafDashboardDropdown">';
     put '<a onclick="raf_toggleDashboardDropdown(event); return false;" style="display:flex; align-items:center; gap:6px; cursor:pointer;">Dashboard <i class="fas fa-caret-down" style="font-size:.75em;"></i></a>';
     put '<ul id="rafDashboardDropdownMenu" style="display:none; position:absolute; top:100%; left:0; background:#ffffff; min-width:190px; border-radius:8px; box-shadow:0 12px 28px rgba(0,0,0,.18); padding:6px; margin-top:10px; z-index:1100;">';
-    put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#risk-appetite-framework''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">CRO Dashboard</a></li>';
+    /* "CRO Dashboard" is a submenu trigger (not a direct nav link) - clicking
+       it opens a side flyout with one entry, "RAF - Risk Appetite
+       Framework", which is what actually navigates to the RAF route
+       (unchanged target: #risk-appetite-framework). raf_toggleCroSubmenu /
+       raf_closeCroSubmenu live next to the other dropdown JS in
+       buildRAF.sas; raf_closeDashboardDropdown already closes this flyout
+       too, so the existing outside-click/Escape handling covers it for
+       free. */
+    put '<li style="position:relative;" id="rafCroDashboardSubmenu">';
+    put '<a onclick="raf_toggleCroSubmenu(event); return false;" style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem; cursor:pointer;">CRO Dashboard <i class="fas fa-caret-right" style="font-size:.7em;"></i></a>';
+    put '<ul id="rafCroSubmenuMenu" style="display:none; position:absolute; top:0; left:100%; background:#ffffff; min-width:220px; border-radius:8px; box-shadow:0 12px 28px rgba(0,0,0,.18); padding:6px; margin-left:6px; z-index:1200;">';
+    put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#risk-appetite-framework''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem; white-space:nowrap;">RAF - Risk Appetite Framework</a></li>';
+    put '</ul>';
+    put '</li>';
     put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#market''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Market Risk</a></li>';
     put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#credit''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Credit Risk</a></li>';
     put '<li><a onclick="raf_closeDashboardDropdown(); showRoute(''#operational''); return false;" style="display:block; padding:9px 12px; border-radius:6px; color:#1f2937; font-weight:500; font-size:.9rem;">Operational Risk</a></li>';
@@ -53,7 +66,12 @@
     put '<i class="fas fa-chevron-right"></i>';
     put '<span>Risk Management</span>';
     put '</div>';
-    put '<h1 class="page-title">Risk Management Dashboard</h1>';
+    /* id added so route-specific JS can retitle this shared shell header
+       (see router.sas's updateContent(), which resets it back to this
+       default before every route render, and buildRAF.sas's getRAFHTML(),
+       which overrides it to "Risk Appetite Framework" while on the RAF
+       route) - text/behaviour for every other route is unchanged. */
+    put '<h1 class="page-title" id="page-title">Risk Management Dashboard</h1>';
     put '<p class="page-subtitle">Comprehensive overview of enterprise risk metrics and compliance status</p>';
     put '</div>';
 %mend generate_page_header;
