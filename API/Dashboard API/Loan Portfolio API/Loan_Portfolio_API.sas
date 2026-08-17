@@ -60,8 +60,13 @@ quit;
     %if &input_ds = %then %let input_ds = work.loan_portfolio;
     %if &output_file = %then %let output_file = &_webout;
 
+    /* LRECL=32767 - this server's _webout default record length is small
+       enough (~1024 bytes, confirmed on the RAF page - see the matching
+       note in ERMS_Application.sas) that a long single generated line gets
+       hard-wrapped with a real mid-line newline wherever the byte count
+       lands, corrupting JSON output the same way it corrupted RAF's JS. */
     data _null_;
-        file _webout;
+        file _webout lrecl=32767;
         set &input_ds;
 
         length timestamp_str $25 api_version_str $10 records_count_str $8

@@ -11,8 +11,23 @@
     %raf_load_excel_data;
 
     /* Start HTML output */
+    /* LRECL=32767 is explicit here because _webout's default record length
+       on this server is small enough (empirically ~1024 bytes) that any
+       single generated line longer than that gets HARD-WRAPPED with a real
+       newline character - wherever that lands, not at any token boundary,
+       since SAS just splits at the byte count. That is what was corrupting
+       the RAF page''s inline <script>: long single-put lines like
+       croDashboardConfig''s treemapByOwnership object ($8100) or an
+       individual metric''s js_line ($6000) would get a raw line break
+       shoved into the middle of a JS string or identifier - e.g.
+       "Fraud Risk Department" landing exactly on a 1024-byte boundary came
+       out as "Frau" + a real newline + "d Risk Department", which is
+       exactly the browser''s "Invalid or unexpected token" - not a data/
+       escaping problem at all, a record-length one. 32767 is SAS's own
+       traditional line-length ceiling, comfortably above every generated
+       line in this app (longest is treemap_line/opts_line at $8100). */
     data _null_;
-        file _webout;
+        file _webout lrecl=32767;
 
         /* Generate HTML Structure */
         %generate_html_header;

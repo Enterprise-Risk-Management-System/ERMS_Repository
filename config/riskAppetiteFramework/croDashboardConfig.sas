@@ -23,12 +23,20 @@
    render functions already consume this exact shape; only what builds the
    data changed. Uses a DO/SET-POINT= loop, not a nested DATA step - see
    riskDomainsConfig.sas's header for why.
+
+   POINT= is always given as a variable (_raf_pt), never a bare numeric
+   literal (not even "point=1") - every other emitting macro in this app
+   (riskDomainsConfig.sas/riskCategoriesConfig.sas/appetiteMetricsConfig.sas)
+   already does it this way inside their DO-loops; raf_kpi_final and
+   raf_treemap_final are each exactly one row, so no loop is needed here,
+   but POINT= still takes a variable set to 1 rather than the literal 1.
    ============================================================================ */
 %macro croDashboardConfig;
     put 'const croDashboardConfig = Object.freeze({';
     put '  isPlaceholderData: true,';
 
-    set work.raf_kpi_final point=1;
+    _raf_pt = 1;
+    set work.raf_kpi_final point=_raf_pt;
     put js_line $varying500. js_len @;
     put ',';
 
@@ -43,7 +51,8 @@
     %end;
     put '  ],';
 
-    set work.raf_treemap_final point=1;
+    _raf_pt = 1;
+    set work.raf_treemap_final point=_raf_pt;
     put opts_line $varying8100. opts_len @;
     put ',';
     put treemap_line $varying8100. treemap_len;

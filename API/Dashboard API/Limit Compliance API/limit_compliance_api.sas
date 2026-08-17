@@ -64,8 +64,13 @@ quit;
     %if &output_file = %then %let output_file = &_webout;
     
     /* Generate JSON response manually for proper structure */
+    /* LRECL=32767 - this server's _webout default record length is small
+       enough (~1024 bytes, confirmed on the RAF page - see the matching
+       note in ERMS_Application.sas) that a long single generated line gets
+       hard-wrapped with a real mid-line newline wherever the byte count
+       lands, corrupting JSON output the same way it corrupted RAF's JS. */
     data _null_;
-        file _webout;
+        file _webout lrecl=32767;
         set &input_ds;
         
         /* Create formatted strings for JSON output */

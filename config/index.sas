@@ -30,7 +30,7 @@
 
     %regulatoryReportsConfig;
 
-    %reportDownloadMetadata
+    %reportDownloadMetadata;
 
     %apiEndpoints;
 

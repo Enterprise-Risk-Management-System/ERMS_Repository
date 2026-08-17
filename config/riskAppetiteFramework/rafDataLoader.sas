@@ -118,9 +118,21 @@
 /* ----------------------------------------------------------------------
    Small text-safety helper, expanded inline wherever a sheet text field is
    about to be embedded into a JS double-quoted string: escapes backslash
-   and double-quote, and flattens any embedded line breaks. Text-substitution
-   macro (compiles to repeated statements), not a callable function - keeps
-   this logic in one place instead of retyping it per field.
+   and double-quote, flattens any embedded line breaks, and strips any
+   other stray control character.
+
+   The last step matters more than it looks: free-text cells (Definition
+   especially, often pasted in from Word/PDF regulation text) can carry
+   invisible characters - a bare tab, a leftover form-feed, or a control
+   byte a copy-paste left behind - that survive PROC IMPORT untouched. Any
+   one of those landing raw inside this app's inline <script> breaks the
+   browser's JS parser ("Invalid or unexpected token") at some arbitrary
+   column, in text that looks completely normal on inspection because the
+   character itself is invisible. CR/LF were already handled explicitly
+   (kept as-is, for clarity/back-compat); the PRXCHANGE pass below is a
+   blanket net for everything else in the C0 control range plus DEL, which
+   can never legitimately belong in a Risk Indicator name/definition, so
+   stripping it can only fix things, never break legitimate text.
    ---------------------------------------------------------------------- */
 %macro raf_jsesc(var);
     &var. = tranwrd(&var., '\', '\\');
@@ -128,6 +140,7 @@
     &var. = tranwrd(&var., '0D0A'x, ' ');
     &var. = tranwrd(&var., '0A'x, ' ');
     &var. = tranwrd(&var., '0D'x, ' ');
+    &var. = prxchange('s/[\x00-\x1F\x7F]/ /', -1, &var.);
     &var. = strip(&var.);
 %mend raf_jsesc;
 
@@ -643,7 +656,7 @@
             m.title length=150,
             coalesce(l.domain_key, 'other') as domain_key length=20,
             coalesce(l.icon,
-                '<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" width=\"22\" height=\"22\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><circle cx=\"12\" cy=\"12\" r=\"9\"/></svg>'
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg>'
             ) as icon length=700,
             m.indicatorCount,
             m.owner length=600,
@@ -664,6 +677,13 @@
     data work.raf_categories_final;
         length js_line $5000;
         set work._raf_categories_joined;
+        /* icon is escaped exactly once, here, regardless of which branch of
+           the COALESCE above produced it - a matched raf_area_lookup icon
+           uses single-quoted SVG attributes (nothing for this to touch, a
+           safe no-op), while the unmatched/"other" fallback icon just above
+           now uses plain double-quoted attributes like every other icon in
+           this file, so this is the one place that needs to make it JS-safe. */
+        %raf_jsesc(icon)
         js_line = '{ key: "' || strip(key) || '", title: "' || strip(title)
           || '", domain: "' || strip(domain_key) || '",';
         js_line = strip(js_line) || ' description: "' || strip(description) || '",';
