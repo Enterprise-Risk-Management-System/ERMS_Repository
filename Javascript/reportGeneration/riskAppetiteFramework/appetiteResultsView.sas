@@ -59,8 +59,12 @@
     put '    const geo = RAFStatus.computeMeterGeometry(metric);';
     put '    const t = metric.thresholds || {};';
     put '    const ops = metric.thresholdOps || {};';
-    put '    const tierLabel = key => (t[key] === null || t[key] === undefined)';
-    put '      ? "-" : ((ops[key] || "") + RAFUtils.formatPercent(t[key], 0));';
+    put '    const labels = metric.thresholdLabels || {};';
+    put '    // Prefers the full sign-aware label built in rafDataLoader.sas (handles a';
+    put '    // range tier like ">=3.5%,<7%" correctly); falls back to reconstructing one';
+    put '    // from thresholds/thresholdOps for any older data that lacks thresholdLabels.';
+    put '    const tierLabel = key => labels[key] || ((t[key] === null || t[key] === undefined)';
+    put '      ? "-" : ((ops[key] || "") + RAFUtils.formatPercent(t[key], 0)));';
     put '    let bands = "";';
     put '    /* .meter-track lays bands out with flexbox (see raStyles.sas), so';
     put '       only width matters here - the bands are already contiguous and';

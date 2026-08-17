@@ -781,8 +781,12 @@ const RAFResults = {
     const geo = RAFStatus.computeMeterGeometry(metric);
     const t = metric.thresholds || {};
     const ops = metric.thresholdOps || {};
-    const tierLabel = key => (t[key] === null || t[key] === undefined)
-      ? "-" : ((ops[key] || "") + RAFUtils.formatPercent(t[key], 0));
+    const labels = metric.thresholdLabels || {};
+    // Prefers the full sign-aware label built in rafDataLoader.sas (handles a
+    // range tier like ">=3.5%,<7%" correctly); falls back to reconstructing one
+    // from thresholds/thresholdOps for any older data that lacks thresholdLabels.
+    const tierLabel = key => labels[key] || ((t[key] === null || t[key] === undefined)
+      ? "-" : ((ops[key] || "") + RAFUtils.formatPercent(t[key], 0)));
     let bands = "";
     (geo.bands || []).forEach(b => {
       bands += '<div class="band ' + RAF_STATUS_CSS_CLASS[b.color] + '" style="width:' + b.widthPct.toFixed(1) + '%"></div>';

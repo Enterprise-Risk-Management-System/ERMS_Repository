@@ -145,40 +145,92 @@
     %end;
 %mend raf_to_text;
 
-/* Parses "&txtvar." (e.g. ">=0.12", "0.02", "< 5 %") into an operator
-   (>=,<=,>,<,=) and a numeric value, via the compiled regex &re_id.
+/* Parses "&txtvar." into an operator + numeric value, via two compiled
+   regexes:
+     &re_range. first  - an interval like "[3.5%, 7.0%)" / "(3.5, 7]" -
+                          "[": lower bound inclusive (>=), "(": exclusive (>);
+                          "]": upper bound inclusive (<=), ")": exclusive (<).
+                          Both bounds are returned (&op2var./&val2var.).
+     &re_id.    else    - a single condition like ">=0.12", "7.0%", "< 5 %".
+   Whichever matches, a captured trailing "%" divides that side's number by
+   100 - the sheet mixes plain fractions (e.g. "0.02", already 0-1) with
+   explicit percentages (e.g. "7.0%"), and both must land in the same 0-1
+   convention Utilization itself uses (see the Utilization parsing below)
+   or every comparison silently compares mismatched units.
    Never aborts the step - unparseable text just leaves the *_valid flag
    at 0, which downstream logic treats as "this tier is not usable",
    consistent with the app's existing error-handling default. */
-%macro raf_parse_cell(txtvar, opvar, valvar, validvar);
-    length &opvar. $2;
-    &opvar. = ''; &valvar. = .; &validvar. = 0;
+%macro raf_parse_cell(txtvar, opvar, valvar, op2var, val2var, validvar);
+    length &opvar. $2 &op2var. $2;
+    &opvar. = ''; &valvar. = .; &op2var. = ''; &val2var. = .; &validvar. = 0;
     if not missing(&txtvar.) then do;
-        if prxmatch(re_id, strip(&txtvar.)) > 0 then do;
+        if prxmatch(re_range, strip(&txtvar.)) > 0 then do;
+            _b1 = strip(prxposn(re_range, 1, strip(&txtvar.)));
+            _numtxt  = strip(prxposn(re_range, 2, strip(&txtvar.)));
+            _pct1    = prxposn(re_range, 3, strip(&txtvar.));
+            _numtxt2 = strip(prxposn(re_range, 4, strip(&txtvar.)));
+            _pct2    = prxposn(re_range, 5, strip(&txtvar.));
+            _b2 = strip(prxposn(re_range, 6, strip(&txtvar.)));
+            _numtxt  = tranwrd(_numtxt, ',', '.');
+            _numtxt2 = tranwrd(_numtxt2, ',', '.');
+            &valvar.  = input(_numtxt, ?? best20.);
+            &val2var. = input(_numtxt2, ?? best20.);
+            if not missing(&valvar.)  and not missing(_pct1) then &valvar.  = &valvar. / 100;
+            if not missing(&val2var.) and not missing(_pct2) then &val2var. = &val2var. / 100;
+            &opvar.  = ifc(_b1 = '[', '>=', '>');
+            &op2var. = ifc(_b2 = ']', '<=', '<');
+            if not missing(&valvar.) and not missing(&val2var.) then &validvar. = 1;
+        end;
+        else if prxmatch(re_id, strip(&txtvar.)) > 0 then do;
             &opvar. = strip(prxposn(re_id, 1, strip(&txtvar.)));
             _numtxt = strip(prxposn(re_id, 2, strip(&txtvar.)));
+            _pct1   = prxposn(re_id, 3, strip(&txtvar.));
             _numtxt = tranwrd(_numtxt, ',', '.');
             &valvar. = input(_numtxt, ?? best20.);
+            if not missing(&valvar.) and not missing(_pct1) then &valvar. = &valvar. / 100;
             if not missing(&valvar.) then &validvar. = 1;
         end;
     end;
 %mend raf_parse_cell;
 
-/* Tests utilization against one already-parsed (op,val) tolerance
-   condition. Inclusive/exclusive at the boundary is exactly whatever the
-   sheet's own sign says (>= / <= include the boundary, > / < exclude it) -
-   this is where the "value exactly equal to a boundary" requirement is
-   handled, driven entirely by the sheet, not a hardcoded assumption. */
-%macro raf_test_cond(opvar, valvar, validvar, hitvar);
+/* Tests utilization against one already-parsed tolerance condition, which
+   may be one-sided (op/val only) or a range (op/val AND op2/val2 - both
+   must pass). Inclusive/exclusive at each boundary is exactly whatever the
+   sheet's own sign/bracket says - this is where the "value exactly equal
+   to a boundary" requirement is handled, driven entirely by the sheet, not
+   a hardcoded assumption. */
+%macro raf_test_cond(opvar, valvar, op2var, val2var, validvar, hitvar);
     &hitvar. = 0;
     if &validvar. and util_valid then do;
-        if &opvar. = '>=' and util_num >= &valvar. then &hitvar. = 1;
-        else if &opvar. = '<=' and util_num <= &valvar. then &hitvar. = 1;
-        else if &opvar. = '>'  and util_num >  &valvar. then &hitvar. = 1;
-        else if &opvar. = '<'  and util_num <  &valvar. then &hitvar. = 1;
-        else if &opvar. = '='  and util_num =  &valvar. then &hitvar. = 1;
+        _pass1 = 0;
+        if &opvar. = '>=' and util_num >= &valvar. then _pass1 = 1;
+        else if &opvar. = '<=' and util_num <= &valvar. then _pass1 = 1;
+        else if &opvar. = '>'  and util_num >  &valvar. then _pass1 = 1;
+        else if &opvar. = '<'  and util_num <  &valvar. then _pass1 = 1;
+        else if &opvar. = '='  and util_num =  &valvar. then _pass1 = 1;
+        _pass2 = 1;
+        if not missing(&val2var.) then do;
+            _pass2 = 0;
+            if &op2var. = '<=' and util_num <= &val2var. then _pass2 = 1;
+            else if &op2var. = '<'  and util_num <  &val2var. then _pass2 = 1;
+            else if &op2var. = '>=' and util_num >= &val2var. then _pass2 = 1;
+            else if &op2var. = '>'  and util_num >  &val2var. then _pass2 = 1;
+        end;
+        if _pass1 and _pass2 then &hitvar. = 1;
     end;
 %mend raf_test_cond;
+
+/* Builds a human-readable label for one tier ("&gt;=7%" or the full
+   "&gt;=3.5%,&lt;7%" for a range) used for the meter-scale text - see
+   appetiteResultsView.sas, which prefers this over reconstructing a label
+   from the raw op/value alone. */
+%macro raf_tier_label(labelvar, validvar, opvar, valvar, op2var, val2var);
+    if not &validvar. then &labelvar. = '-';
+    else if not missing(&val2var.) then
+        &labelvar. = strip(&opvar.) || strip(put(&valvar.*100, 8.1)) || '%,'
+                     || strip(&op2var.) || strip(put(&val2var.*100, 8.1)) || '%';
+    else &labelvar. = strip(&opvar.) || strip(put(&valvar.*100, 8.1)) || '%';
+%mend raf_tier_label;
 
 
 /* ----------------------------------------------------------------------
@@ -194,20 +246,26 @@
                frequency criticality $100
                green_txt amber_txt red_txt reg_txt util_txt $50
                green_op amber_op red_op reg_op $2
+               green_op2 amber_op2 red_op2 reg_op2 $2
+               green_label amber_label red_label reg_label $40
                dir_hint $4
-               _numtxt _clean $30
+               _numtxt _numtxt2 _clean $30
+               _b1 _b2 _pct1 _pct2 $2
                status $6
                thresh_green_js thresh_amber_js thresh_red_js thresh_reg_js $12
                util_js $16
                bands_js $600 tmp $150 _tl $6
                js_line $6000;
-        retain re_id riskarea_cf;
+        retain re_id re_range riskarea_cf;
         array bnd_val[3] _temporary_;
         array bnd_lbl[3] $6 _temporary_;
         if _n_ = 1 then do;
             /* optional leading sign, then a signed decimal number, then an
                optional trailing "%" - e.g. ">=12", "< 0.04", "5%", "-2.5" */
-            re_id = prxparse('/^\s*(>=|<=|>|<|=)?\s*([+-]?[0-9]+(?:[.,][0-9]+)?)\s*%?\s*$/');
+            re_id = prxparse('/^\s*(>=|<=|>|<|=)?\s*([+-]?[0-9]+(?:[.,][0-9]+)?)\s*(%)?\s*$/');
+            /* an interval like "[3.5%, 7.0%)" or "(3.5, 7]" - see
+               %raf_parse_cell above for what each bracket means */
+            re_range = prxparse('/^\s*([\[\(])\s*([+-]?[0-9]+(?:[.,][0-9]+)?)\s*(%)?\s*,\s*([+-]?[0-9]+(?:[.,][0-9]+)?)\s*(%)?\s*([\]\)])\s*$/');
             declare hash _idh();
             _idh.defineKey('slug_key');
             _idh.defineData('slug_key','_cnt');
@@ -227,21 +285,27 @@
         %raf_to_text(reg_raw,   reg_txt,   &RAF_T_REG.)
         %raf_to_text(util_raw,  util_txt,  &RAF_T_UTIL.)
 
-        /* ---- parse each into (operator, numeric value, valid?) ---- */
-        %raf_parse_cell(green_txt, green_op, green_val, green_valid)
-        %raf_parse_cell(amber_txt, amber_op, amber_val, amber_valid)
-        %raf_parse_cell(red_txt,   red_op,   red_val,   red_valid)
-        %raf_parse_cell(reg_txt,   reg_op,   reg_val,   reg_valid)
+        /* ---- parse each into (operator, numeric value[, operator2, value2], valid?) ---- */
+        %raf_parse_cell(green_txt, green_op, green_val, green_op2, green_val2, green_valid)
+        %raf_parse_cell(amber_txt, amber_op, amber_val, amber_op2, amber_val2, amber_valid)
+        %raf_parse_cell(red_txt,   red_op,   red_val,   red_op2,   red_val2,   red_valid)
+        %raf_parse_cell(reg_txt,   reg_op,   reg_val,   reg_op2,   reg_val2,   reg_valid)
 
         /* Utilization is a plain measured value, never signed - parse just
-           the number, ignoring any accidental leading sign. */
+           the number, ignoring any accidental leading sign. Same 0-1
+           convention as the tolerance cells above: a trailing "%" divides
+           by 100, a bare number (e.g. "0.156") is taken as already 0-1. */
         util_num = .; util_valid = 0;
         if not missing(util_txt) then do;
+            _has_pct = (index(util_txt, '%') > 0);
             _clean = compress(util_txt, '%');   /* drop a trailing "%" if present */
             _clean = compress(_clean, ' ');
             _clean = tranwrd(_clean, ',', '.');
             util_num = input(_clean, ?? best20.);
-            if not missing(util_num) then util_valid = 1;
+            if not missing(util_num) then do;
+                util_valid = 1;
+                if _has_pct then util_num = util_num / 100;
+            end;
         end;
 
         /* ---- where a tolerance cell had no explicit sign, infer one from
@@ -266,9 +330,9 @@
            no tier at all is usable, leave status blank; the JS layer
            already defaults an unusable metric to a safe neutral status,
            same as it does today. ---- */
-        %raf_test_cond(green_op, green_val, green_valid, hit_green)
-        %raf_test_cond(amber_op, amber_val, amber_valid, hit_amber)
-        %raf_test_cond(red_op,   red_val,   red_valid,   hit_red)
+        %raf_test_cond(green_op, green_val, green_op2, green_val2, green_valid, hit_green)
+        %raf_test_cond(amber_op, amber_val, amber_op2, amber_val2, amber_valid, hit_amber)
+        %raf_test_cond(red_op,   red_val,   red_op2,   red_val2,   red_valid,   hit_red)
         if hit_green then status = 'green';
         else if hit_amber then status = 'amber';
         else if hit_red then status = 'red';
@@ -281,11 +345,30 @@
            threshold * 1.2" idea, generalized to also cover negative/
            descending scales. Every position is clamped to [0,100] so the
            pointer can never land outside the visible track. ---- */
+        /* Each tier's upper bound (val2, only present for a range like
+           "[3.5%, 7.0%)") is folded in too, so the scale properly stretches
+           to cover it - the band SEGMENTS drawn below still split on each
+           tier's lower/primary value only (a range's own upper edge isn't
+           separately drawn as a band boundary); that's a deliberate visual
+           simplification, not a classification one - the RAG classification
+           above already tests both bounds correctly regardless. */
         _max = .; _min = .;
-        if green_valid then do; if missing(_max) or green_val>_max then _max=green_val; if missing(_min) or green_val<_min then _min=green_val; end;
-        if amber_valid then do; if missing(_max) or amber_val>_max then _max=amber_val; if missing(_min) or amber_val<_min then _min=amber_val; end;
-        if red_valid   then do; if missing(_max) or red_val>_max   then _max=red_val;   if missing(_min) or red_val<_min   then _min=red_val;   end;
-        if reg_valid   then do; if missing(_max) or reg_val>_max   then _max=reg_val;   if missing(_min) or reg_val<_min   then _min=reg_val;   end;
+        if green_valid then do;
+            if missing(_max) or green_val>_max then _max=green_val; if missing(_min) or green_val<_min then _min=green_val;
+            if not missing(green_val2) then do; if green_val2>_max then _max=green_val2; if green_val2<_min then _min=green_val2; end;
+        end;
+        if amber_valid then do;
+            if missing(_max) or amber_val>_max then _max=amber_val; if missing(_min) or amber_val<_min then _min=amber_val;
+            if not missing(amber_val2) then do; if amber_val2>_max then _max=amber_val2; if amber_val2<_min then _min=amber_val2; end;
+        end;
+        if red_valid   then do;
+            if missing(_max) or red_val>_max   then _max=red_val;   if missing(_min) or red_val<_min   then _min=red_val;
+            if not missing(red_val2) then do; if red_val2>_max then _max=red_val2; if red_val2<_min then _min=red_val2; end;
+        end;
+        if reg_valid   then do;
+            if missing(_max) or reg_val>_max   then _max=reg_val;   if missing(_min) or reg_val<_min   then _min=reg_val;
+            if not missing(reg_val2) then do; if reg_val2>_max then _max=reg_val2; if reg_val2<_min then _min=reg_val2; end;
+        end;
         if missing(_max) then do; _max = 1; _min = 0; end;
         scale_min = min(0, _min);
         scale_max = _max + (_max - scale_min) * 0.2;
@@ -310,9 +393,19 @@
         if green_valid then do; n_bnd+1; bnd_val[n_bnd]=green_val; bnd_lbl[n_bnd]='green'; end;
         if amber_valid then do; n_bnd+1; bnd_val[n_bnd]=amber_val; bnd_lbl[n_bnd]='amber'; end;
         if red_valid   then do; n_bnd+1; bnd_val[n_bnd]=red_val;   bnd_lbl[n_bnd]='red';   end;
+        /* NOTE: the bounds check (_j > 1) and the array comparison are
+           deliberately two SEPARATE statements, not one "_j > 1 and
+           bnd_val[_j] < bnd_val[_j-1]" condition - SAS does not guarantee
+           AND short-circuits before evaluating the array reference, so
+           combining them let bnd_val[_j-1] get evaluated as bnd_val[0]
+           once _j reached 1, which is out of range for a 3-element array
+           and stopped the step ("Array subscript out of range"). The
+           IF/LEAVE below only ever touches bnd_val[_j-1] after the WHILE
+           has already confirmed _j > 1 on its own. */
         do _i = 2 to n_bnd;
             _j = _i;
-            do while (_j > 1 and bnd_val[_j] < bnd_val[_j-1]);
+            do while (_j > 1);
+                if bnd_val[_j] >= bnd_val[_j-1] then leave;
                 _tv = bnd_val[_j]; bnd_val[_j] = bnd_val[_j-1]; bnd_val[_j-1] = _tv;
                 _tl = bnd_lbl[_j]; bnd_lbl[_j] = bnd_lbl[_j-1]; bnd_lbl[_j-1] = _tl;
                 _j = _j - 1;
@@ -369,6 +462,15 @@
         thresh_reg_js   = ifc(reg_valid,   strip(put(reg_val,best12.)),   'null');
         util_js         = ifc(util_valid,  strip(put(util_num,best12.)),  'null');
 
+        /* Full sign-aware label per tier (">=7%" or, for a range,
+           ">=3.5%,<7%") - appetiteResultsView.sas shows this on the meter
+           scale instead of reconstructing one from thresholds/thresholdOps
+           alone, which can't represent a range's second bound. */
+        %raf_tier_label(green_label, green_valid, green_op, green_val, green_op2, green_val2)
+        %raf_tier_label(amber_label, amber_valid, amber_op, amber_val, amber_op2, amber_val2)
+        %raf_tier_label(red_label,   red_valid,   red_op,   red_val,   red_op2,   red_val2)
+        %raf_tier_label(reg_label,   reg_valid,   reg_op,   reg_val,   reg_op2,   reg_val2)
+
         js_line = '{ sNo: ' || strip(put(sno,best.-L)) || ', id: "' || strip(id)
           || '", indicator: "' || strip(indicator) || '",' ;
         js_line = strip(js_line) || ' definition: "' || strip(definition) || '",';
@@ -377,6 +479,8 @@
           || ', regulatory: ' || strip(thresh_reg_js) || ' },';
         js_line = strip(js_line) || ' thresholdOps: { green: "' || strip(green_op) || '", amber: "'
           || strip(amber_op) || '", red: "' || strip(red_op) || '", regulatory: "' || strip(reg_op) || '" },';
+        js_line = strip(js_line) || ' thresholdLabels: { green: "' || strip(green_label) || '", amber: "'
+          || strip(amber_label) || '", red: "' || strip(red_label) || '", regulatory: "' || strip(reg_label) || '" },';
         js_line = strip(js_line) || ' frequency: "' || strip(frequency) || '", criticality: "'
           || strip(criticality) || '", owner: "' || strip(ownership) || '", committee: "'
           || strip(committee) || '", comment: "' || strip(comments) || '",';
