@@ -7,15 +7,19 @@
 
    REAL vs. DUMMY, per zone (the sheet has exactly one reporting period,
    Q2-2026 - see the plan discussed with the business owner):
-     - KPI strip, the NEWEST period of Zone 2 (Heatmap by Criticality), the
-       NEWEST period of Zone 3 (Treemap by Ownership), and the NEWEST point
-       of Zone 4 (Trend by Pillar) are all computed for real from the sheet.
-     - The other 3 "prior period" columns in Zones 2/3/4 have no real data
-       to compute from (one period exists) - each is a flat copy-forward of
+     - KPI strip, the NEWEST period of Zone 2 (Heatmap by Criticality) and
+       the NEWEST period of Zone 3 (Treemap by Ownership) are all computed
+       for real from the sheet.
+     - The other 3 "prior period" columns in Zones 2/3 have no real data to
+       compute from (one period exists) - each is a flat copy-forward of
        that same group's real current counts, clearly commented at each
        site below as the swap-in point for when a real period-over-period
        backend exists. Nothing here is a fabricated per-group number; it is
        the real current count, repeated, until real history exists.
+   (Zone 1, Critical Risk Indicators, and its curated-metric cards are built
+   client-side in croDashboardView.sas straight off appetiteMetricsConfig -
+   no SAS aggregate needed for it. Zone 4, Trend by Pillar, has been
+   removed along with the Trend Analysis tab.)
    ============================================================================ */
 %macro raf_build_dashboard_aggregates;
 
@@ -121,33 +125,9 @@
         keep opts_line opts_len treemap_line treemap_len;
     run;
 
-    /* ---- Zone 4: Trend by Pillar - Pillar 1 / Pillar 2 = metrics whose
-       sheet Comments column is literally "P1" / "P2" (a real column, same
-       tag already shown as the metric-card chip - see
-       appetiteMetricsConfig.sas). Real current watch+breach (amber+red)
-       count per pillar; same copy-forward placeholder treatment for the 3
-       prior points (a trend line needs multiple real periods, which this
-       sheet does not have yet - matches the "insufficient history -> use
-       dummy for demonstration" rule agreed with the business owner). ---- */
-    proc sql noprint;
-        select sum((comments='P1') and status in ('amber','red')),
-               sum((comments='P2') and status in ('amber','red'))
-            into :raf_p1_wb trimmed, :raf_p2_wb trimmed
-            from work.raf_metrics_final;
-    quit;
-
-    data work.raf_pillar_final;
-        length js_line $1000;
-        _p1 = input("&raf_p1_wb.", ?? best.); _p2 = input("&raf_p2_wb.", ?? best.);
-        if missing(_p1) then _p1 = 0; if missing(_p2) then _p2 = 0;
-        js_line = 'trendByPillar: { periods: ["2025-09-30","2025-12-31","2026-03-31","2026-06-30"], '
-          || 'pillar1WatchBreachCount: [' || strip(put(_p1,best.-L)) || ',' || strip(put(_p1,best.-L))
-          || ',' || strip(put(_p1,best.-L)) || ',' || strip(put(_p1,best.-L)) || '], '
-          || 'pillar2WatchBreachCount: [' || strip(put(_p2,best.-L)) || ',' || strip(put(_p2,best.-L))
-          || ',' || strip(put(_p2,best.-L)) || ',' || strip(put(_p2,best.-L)) || '] }';
-        js_len = length(js_line);
-        keep js_line js_len;
-    run;
+    /* Zone 4 (Trend by Pillar) aggregate removed along with the Trend
+       Analysis tab - not currently required; see buildRAF.sas/
+       croDashboardView.sas/croDashboardConfig.sas for the matching removal. */
 
     %global RAF_CRITICALITY_NOBS;
     proc sql noprint;

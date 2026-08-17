@@ -23,12 +23,13 @@
         real URL. Only ERMS's own top-level routes (including this one) use
         the hash.
      4. RAF's palette (see raStyles.sas) is drawn directly from ERMS's own
-        navbar gradient / gray scale / status-badge colors, and the topbar
-        strip below uses that same ERMS blue - it signals "CRO-scoped
-        section" via the badge label alone, not via a different color scheme.
+        navbar gradient / gray scale / status-badge colors, so the CRO
+        Dashboard reads as part of ERMS rather than a visually distinct
+        tool bolted on.
      5. No real access control exists yet (ERMS has no auth/role layer) - the
-        "CRO Only" badge in the topbar is a labeling convention, not
-        enforcement. Revisit once ERMS gets role-based access.
+        page carries no "CRO Only" labeling convention (removed along with
+        the topbar - not currently required). Revisit once ERMS gets
+        role-based access.
    ============================================================================ */
 %macro buildRAF;
 
@@ -90,7 +91,6 @@
        Appetite Framework" - that text now belongs solely to the shared
        shell header set once in getRAFHTML(), so it isn''t shown twice. */
     put '    RAFUI.setTitle("CRO Dashboard", riskCategoriesConfig.length + " risk areas - " + totalIndicators + " indicators tracked against Board-approved appetite limits.");';
-    put '    raf_updateFilterNote();';
     put '  },';
     put '  showDomains() {';
     put '    this.render(buildRafDomainsHTML());';
@@ -140,24 +140,17 @@
        back to the default before every route render, so leaving RAF for
        another route un-stales it automatically; nothing else about that
        shared header (breadcrumb, subtitle) changes. This is also now the
-       ONLY place "Risk Appetite Framework" appears - the topbar brand text
-       below and the CRO Dashboard sub-view''s own in-page title (see
-       RAFRouting.showDashboard()) were the duplicates and have been
-       removed/reworded accordingly. */
+       ONLY place "Risk Appetite Framework" appears - the CRO Dashboard
+       sub-view''s own in-page title (see RAFRouting.showDashboard()) was
+       the duplicate and has been reworded accordingly. */
     put '  var shellTitleEl = document.getElementById("page-title");';
     put '  if (shellTitleEl) shellTitleEl.textContent = "Risk Appetite Framework";';
     put '  let html = RAF_STYLE_BLOCK;';
     put '  html += RAF_ICON_DEFS;';
+    /* The navy/blue ".raf-topbar" gradient bar (brand icon + "CRO Only"
+       badge) that used to sit above .raf-body has been removed entirely -
+       not currently required. .raf-body now opens .raf-app directly. */
     put '  html += ''<div class="raf-app">'';';
-    put '  html += ''  <div class="raf-topbar">'';';
-    put '  html += ''    <div class="raf-topbar-brand">'';';
-    put '  html += ''      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">'';';
-    put '  html += ''        <path d="M9 17 L14 9 L18 13 L24 5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'';';
-    put '  html += ''        <circle cx="24" cy="5" r="2.3" fill="#93c5fd"/>'';';
-    put '  html += ''      </svg>'';';
-    put '  html += ''    </div>'';';
-    put '  html += ''    <span class="raf-cro-badge">CRO Only</span>'';';
-    put '  html += ''  </div>'';';
     put '  html += ''  <div class="raf-body">'';';
     put '  html += ''    <div class="crumb" id="raf-breadcrumb-trail"></div>'';';
     put '  html += ''    <h2 class="raf-pagetitle" id="raf-page-title"></h2>'';';
@@ -169,65 +162,50 @@
     put '  return html;';
     put '}';
 
-    /* ---- Zone 1-4 dashboard shell (filter bar + zone panels) ---- */
+    /* ---- Zone 1-3 dashboard shell (tab bar + zone panels) ---- */
     put 'function buildRafDashboardHTML() {';
     put '  let html = "";';
-    put '  html += ''<div class="filter-panel">'';';
-    put '  html += ''  <div class="filter-fields">'';';
-    put '  html += ''    <div class="filter-field"><label for="rafFrequency">Frequency</label>'';';
-    put '  html += ''      <select id="rafFrequency" onchange="raf_updateFilterNote()">'';';
-    put '  html += ''        <option>Daily</option><option selected>Quarterly</option><option>Monthly</option>'';';
-    put '  html += ''      </select>'';';
-    put '  html += ''    </div>'';';
-    put '  html += ''    <div class="filter-field"><label for="rafCriticality">Criticality</label>'';';
-    put '  html += ''      <select id="rafCriticality" onchange="raf_updateFilterNote()">'';';
-    put '  html += ''        <option selected>All</option><option>Level 1</option><option>Level 2A</option><option>Level 2B</option>'';';
-    put '  html += ''      </select>'';';
-    put '  html += ''    </div>'';';
-    put '  html += ''    <div class="filter-field"><label for="rafRiskArea">Risk Area</label>'';';
-    put '  html += ''      <select id="rafRiskArea" onchange="raf_updateFilterNote()">'';';
-    put '  html += ''        <option selected>All</option>'';';
-    put '  html += riskCategoriesConfig.map(c => ''<option>'' + escapeHtml(c.title) + ''</option>'').join("");';
-    put '  html += ''      </select>'';';
-    put '  html += ''    </div>'';';
-    put '  html += ''  </div>'';';
-    put '  html += ''  <div class="note-box">'';';
-    put '  html += ''    <div class="note-box-title">Note on the dashboard</div>'';';
-    put '  html += ''    <div class="note-line">Frequency, when selected as <b>Daily</b> - displays the last 31 days / until today (whichever is lower)</div>'';';
-    put '  html += ''    <div class="note-line">Frequency, when selected as <b>Monthly</b> - displays the last 12 months of the current reporting year</div>'';';
-    put '  html += ''    <div class="note-line">Frequency, when selected as <b>Quarter</b> - displays the last 4 quarters of the current reporting year</div>'';';
-    put '  html += ''  </div>'';';
-    put '  html += ''  <div class="filter-note" id="rafFilterNote"></div>'';';
-    put '  html += ''</div>'';';
 
     /* Tab bar - one tab per indicator view, only one panel visible at a time
        (raf_showTab below) so each gets the full main-panel width instead of
-       all 4 stacking down the page. "Risk Domains" is a 5th tab in the same
-       bar, but unlike the other 4 it isn't a same-page show/hide panel - it
-       is a multi-level drill-down (Domains -> Risk Categories -> Metric
-       detail, see buildRafDomainsHTML/buildRafCategoriesHTML/
-       buildRafCategoryDetailHTML below), so clicking it hands off to
-       RAFRouting.showDomains() (a full #raf-main-panel navigation, already
-       built - the breadcrumb it renders links "CRO Dashboard" back to
-       RAFRouting.showDashboard(), which rebuilds this tab bar fresh). */
-    /* "Critical Risk Indicators" tab/zone removed - not currently required
-       (see croDashboardConfig.sas/croDashboardView.sas/
-       rafDashboardAggregates.sas for the matching removal). Heatmap is now
-       the first/default-active tab. */
+       all 3 stacking down the page. "Risk Domains & Drill Down" is a 4th tab
+       in the same bar, but unlike the other 3 it isn't a same-page
+       show/hide panel - it is a multi-level drill-down (Domains -> Risk
+       Categories -> Metric detail, see buildRafDomainsHTML/
+       buildRafCategoriesHTML/buildRafCategoryDetailHTML below), so clicking
+       it hands off to RAFRouting.showDomains() (a full #raf-main-panel
+       navigation, already built - the breadcrumb it renders links "CRO
+       Dashboard" back to RAFRouting.showDashboard(), which rebuilds this
+       tab bar fresh).
+       Fixed order per the business owner - do not reorder: Critical
+       Indicators, Risk Indicator Treemap, Risk Indicator Heatmap, Risk
+       Domains & Drill Down. Critical Indicators is the default-active tab. */
     put '  html += ''<div class="raf-tabs" role="tablist">'';';
-    put '  html += ''  <button type="button" class="raf-tab active" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap - by Criticality</button>'';';
-    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap - by Ownership</button>'';';
-    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="trend" onclick="raf_showTab(&apos;trend&apos;)">Risk Indicator Trend Analysis - by Pillar</button>'';';
-    put '  html += ''  <button type="button" class="raf-tab" onclick="RAFRouting.showDomains()">Risk Domains &rarr;</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab active" data-raf-tab="critical" onclick="raf_showTab(&apos;critical&apos;)">Critical Indicators</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap</button>'';';
+    put '  html += ''  <button type="button" class="raf-tab" onclick="RAFRouting.showDomains()">Risk Domains &amp; Drill Down &rarr;</button>'';';
     put '  html += ''</div>'';';
 
-    put '  html += ''<div class="raf-tabpanel active" id="raf-tabpanel-heatmap">'';';
-    put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
-    put '  html += ''    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>'';';
-    put '  html += filterBarHtml("raf-heatmap-table");';
-    put '  html += ''    <div style="overflow-x:auto;">'' + RAFDashboardView.renderHeatmapByCriticality().replace(''<table class="heatmap-table">'', ''<table class="heatmap-table" id="raf-heatmap-table">'') + ''</div>'';';
-    put '  html += ''    <div style="margin-top:10px; text-align:right;"><button class="btn" onclick="exportTableToExcel(&apos;raf-heatmap-table&apos;,&apos;Heatmap by Criticality&apos;,&apos;RAF_Heatmap&apos;)">Export to Excel</button></div>'';';
-    put '  html += ''  </div></div>'';';
+    /* Critical Indicators tab: a blue header ribbon (ERMS''s own navy ->
+       brand-2 gradient, for visual consistency with the rest of the app)
+       with a right-aligned, reference-style "Show" control, followed by the 6
+       curated indicator cards. The "Show" select is a visual/reference
+       reproduction of the design being matched, not a live filter - the 6
+       featured cards are a fixed business-curated set (see the comment in
+       croDashboardView.sas), same as the reference''s own fixed 5. */
+    put '  html += ''<div class="raf-tabpanel active" id="raf-tabpanel-critical">'';';
+    put '  html += ''  <div class="zone-panel">'';';
+    put '  html += ''    <div class="crit-header"><h3>Critical Risk Indicators</h3>'';';
+    put '  html += ''      <div class="crit-header-show">Show'';';
+    put '  html += ''        <select aria-label="Critical indicators view"><option>Top 5 &middot; Monthly</option><option>Top 5 &middot; Quarterly</option><option>Top 10 &middot; Monthly</option></select>'';';
+    put '  html += ''      </div>'';';
+    put '  html += ''    </div>'';';
+    put '  html += ''    <div class="zone-body">'';';
+    put '  html += ''      <p class="zone-desc">Indicators marked for CRO visibility. Each card shows the Reporting Date vs. Value across the last 3 periods - the 2026-06-30 row is live from the sheet; earlier rows are placeholders pending a historical data connection. Click a card to open its full metric detail.</p>'';';
+    put '  html += ''      <div class="ind-grid">'' + RAFDashboardView.renderCriticalIndicators() + ''</div>'';';
+    put '  html += ''    </div>'';';
+    put '  html += ''  </div>'';';
     put '  html += ''</div>'';';
 
     put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-treemap">'';';
@@ -244,16 +222,18 @@
     put '  html += ''  </div>'';';
     put '  html += ''</div>'';';
 
-    put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-trend">'';';
+    put '  html += ''<div class="raf-tabpanel" id="raf-tabpanel-heatmap">'';';
     put '  html += ''  <div class="zone-panel"><div class="zone-body">'';';
-    put '  html += ''    <p class="zone-desc">Count of indicators in Watch or Breach (Amber + Red), Pillar 1 vs. Pillar 2 (sheet Comments = P1/P2). The 2026-06-30 point is live from the sheet; earlier points are placeholders pending a historical data connection.</p>'';';
-    put '  html += RAFDashboardView.renderTrendByPillar();';
+    put '  html += ''    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>'';';
+    put '  html += filterBarHtml("raf-heatmap-table");';
+    put '  html += ''    <div style="overflow-x:auto;">'' + RAFDashboardView.renderHeatmapByCriticality().replace(''<table class="heatmap-table">'', ''<table class="heatmap-table" id="raf-heatmap-table">'') + ''</div>'';';
+    put '  html += ''    <div style="margin-top:10px; text-align:right;"><button class="btn" onclick="exportTableToExcel(&apos;raf-heatmap-table&apos;,&apos;Heatmap by Criticality&apos;,&apos;RAF_Heatmap&apos;)">Export to Excel</button></div>'';';
     put '  html += ''  </div></div>'';';
     put '  html += ''</div>'';';
     put '  return html;';
     put '}';
 
-    put '// Switches the CRO Dashboard tab (Critical Indicators / Heatmap / Treemap / Trend) -';
+    put '// Switches the CRO Dashboard tab (Critical Indicators / Treemap / Heatmap) -';
     put '// pure show/hide over already-rendered panels, no re-fetch or re-render.';
     put 'function raf_showTab(tabKey) {';
     put '  document.querySelectorAll(".raf-tab").forEach(function (el) {';
@@ -264,18 +244,6 @@
     put '  });';
     put '}';
 
-    put 'function raf_updateFilterNote() {';
-    put '  const freqEl = document.getElementById("rafFrequency");';
-    put '  const critEl = document.getElementById("rafCriticality");';
-    put '  const areaEl = document.getElementById("rafRiskArea");';
-    put '  const note = document.getElementById("rafFilterNote");';
-    put '  if (!freqEl || !note) return;';
-    put '  const periodEnd = { Daily: RAFUtils.getTodayDate(), Monthly: "2026-06-30", Quarterly: "2026-06-30" };';
-    put '  const freq = freqEl.value, crit = critEl.value, area = areaEl.value;';
-    put '  note.innerHTML = "Filter selection: report generated for the period <b>" + freq + " - "';
-    put '    + RAFUtils.formatDate(periodEnd[freq]) + "</b>, <b>" + crit + "</b> Criticality, showing <b>"';
-    put '    + area + "</b> Risk Area" + (area === "All" ? "s" : "") + ".";';
-    put '}';
     put 'function raf_updateTreemapOwner(select) {';
     put '  const body = document.getElementById("rafTreemapZoneBody");';
     put '  if (body) body.innerHTML = RAFDashboardView.renderTreemapByOwnership(select.value);';

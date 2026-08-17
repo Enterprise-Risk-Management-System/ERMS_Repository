@@ -456,10 +456,12 @@ const appetiteMetricsConfig = Object.freeze({
 /* ============================================================================
    croDashboardConfig.sas - now data-driven off the real sheet wherever the
    sheet has the answer (rafDashboardAggregates.sas): KPI counts and the
-   NEWEST period of the Heatmap/Treemap/Trend zones are real. (Critical Risk
-   Indicators has been removed - not currently required.) The sheet has
-   exactly one reporting period (Q2-2026), so
-   the 3 "prior period" columns those 3 zones show have no real data to
+   NEWEST period of the Heatmap/Treemap zones are real. (Critical Risk
+   Indicators/Zone 1 is built client-side straight off appetiteMetricsConfig
+   - see RAFDashboardView.renderCriticalIndicators() below - so it needs no
+   entry here. Trend Analysis by Pillar has been removed along with its
+   tab.) The sheet has exactly one reporting period (Q2-2026), so the 3
+   "prior period" columns the 2 remaining zones show have no real data to
    compute from - each is that same group's real current count copied
    forward, clearly marked as the future backend swap-in point at its build
    site in rafDashboardAggregates.sas. isPlaceholderData stays true to
@@ -474,8 +476,7 @@ const croDashboardConfig = Object.freeze({
     { criticality: "Level 2B", totalIndicators: 12, periods: [{date:"2026-06-30",good:0,watch:0,breach:12,trend:"up"},{date:"2026-03-31",good:0,watch:0,breach:12,trend:"up"},{date:"2025-12-31",good:0,watch:0,breach:12,trend:"up"},{date:"2025-09-30",good:0,watch:0,breach:12,trend:"up"}] }
   ],
   ownershipOptions: ["Credit","Credit Risk","Cyber Risk Department","Enterprise Risk Management","Finance and Planning","Fraud Risk Department","Human Resources Group","Islamic Banking Division","Legal Department","Market Risk","ORMD","PR & CSR and  Marketing & Customer Experience","RMG"],
-  treemapByOwnership: {"Credit": [{date:"2026-06-30",good:0,watch:0,breach:21},{date:"2026-03-31",good:0,watch:0,breach:21},{date:"2025-12-31",good:0,watch:0,breach:21},{date:"2025-09-30",good:0,watch:0,breach:21}],"Credit Risk": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Cyber Risk Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Enterprise Risk Management": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Finance and Planning": [{date:"2026-06-30",good:0,watch:0,breach:5},{date:"2026-03-31",good:0,watch:0,breach:5},{date:"2025-12-31",good:0,watch:0,breach:5},{date:"2025-09-30",good:0,watch:0,breach:5}],"Fraud Risk Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Human Resources Group": [{date:"2026-06-30",good:0,watch:0,breach:4},{date:"2026-03-31",good:0,watch:0,breach:4},{date:"2025-12-31",good:0,watch:0,breach:4},{date:"2025-09-30",good:0,watch:0,breach:4}],"Islamic Banking Division": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Legal Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Market Risk": [{date:"2026-06-30",good:0,watch:0,breach:21},{date:"2026-03-31",good:0,watch:0,breach:21},{date:"2025-12-31",good:0,watch:0,breach:21},{date:"2025-09-30",good:0,watch:0,breach:21}],"ORMD": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"PR & CSR and  Marketing & Customer Experience": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"RMG": [{date:"2026-06-30",good:0,watch:0,breach:5},{date:"2026-03-31",good:0,watch:0,breach:5},{date:"2025-12-31",good:0,watch:0,breach:5},{date:"2025-09-30",good:0,watch:0,breach:5}]},
-  trendByPillar: { periods: ["2025-09-30","2025-12-31","2026-03-31","2026-06-30"], pillar1WatchBreachCount: [5,5,5,5], pillar2WatchBreachCount: [15,15,15,15] }
+  treemapByOwnership: {"Credit": [{date:"2026-06-30",good:0,watch:0,breach:21},{date:"2026-03-31",good:0,watch:0,breach:21},{date:"2025-12-31",good:0,watch:0,breach:21},{date:"2025-09-30",good:0,watch:0,breach:21}],"Credit Risk": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Cyber Risk Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Enterprise Risk Management": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Finance and Planning": [{date:"2026-06-30",good:0,watch:0,breach:5},{date:"2026-03-31",good:0,watch:0,breach:5},{date:"2025-12-31",good:0,watch:0,breach:5},{date:"2025-09-30",good:0,watch:0,breach:5}],"Fraud Risk Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Human Resources Group": [{date:"2026-06-30",good:0,watch:0,breach:4},{date:"2026-03-31",good:0,watch:0,breach:4},{date:"2025-12-31",good:0,watch:0,breach:4},{date:"2025-09-30",good:0,watch:0,breach:4}],"Islamic Banking Division": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Legal Department": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"Market Risk": [{date:"2026-06-30",good:0,watch:0,breach:21},{date:"2026-03-31",good:0,watch:0,breach:21},{date:"2025-12-31",good:0,watch:0,breach:21},{date:"2025-09-30",good:0,watch:0,breach:21}],"ORMD": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"PR & CSR and  Marketing & Customer Experience": [{date:"2026-06-30",good:0,watch:0,breach:1},{date:"2026-03-31",good:0,watch:0,breach:1},{date:"2025-12-31",good:0,watch:0,breach:1},{date:"2025-09-30",good:0,watch:0,breach:1}],"RMG": [{date:"2026-06-30",good:0,watch:0,breach:5},{date:"2026-03-31",good:0,watch:0,breach:5},{date:"2025-12-31",good:0,watch:0,breach:5},{date:"2025-09-30",good:0,watch:0,breach:5}]}
 });
 
 /* ============================================================================
@@ -513,12 +514,9 @@ const RAF_STYLE_BLOCK = `<style>
 }
 .raf-app * { box-sizing: border-box; }
 .raf-app a { text-decoration: none; color: inherit; }
-.raf-app .raf-topbar { background: linear-gradient(135deg, var(--navy) 0%, var(--brand-2) 100%);
-  padding: 14px 22px; display: flex; align-items: center; justify-content: space-between;
-  border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05); margin-bottom: 20px; }
-.raf-app .raf-topbar-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; font-size: 1.05rem; letter-spacing: -.01em; }
-.raf-app .raf-cro-badge { background: rgba(255,255,255,.18); color: #fff; font-size: .68rem; font-weight: 700;
-  letter-spacing: .06em; text-transform: uppercase; padding: 4px 11px; border-radius: 20px; border: 1px solid rgba(255,255,255,.35); }
+/* .raf-topbar/.raf-topbar-brand/.raf-cro-badge (the navy/blue gradient bar
+   with the brand icon + "CRO Only" badge that used to sit above .raf-body)
+   removed entirely - not currently required. */
 .raf-app .raf-body { padding: 0; }
 .raf-app .crumb { font-size: .8rem; color: var(--text-3); margin-bottom: 10px; }
 .raf-app .crumb b { color: var(--navy); font-weight: 700; cursor: pointer; }
@@ -534,19 +532,9 @@ const RAF_STYLE_BLOCK = `<style>
 .raf-app .btn.ghost:hover { background: var(--brand-tint); }
 .raf-app select { font-family: inherit; font-size: .82rem; font-weight: 700; color: var(--text-1);
   background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; cursor: pointer; }
-.raf-app .filter-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
-  padding: 16px 20px; margin-bottom: 18px; display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 16px; align-items: start; }
-.raf-app .filter-fields { display: flex; gap: 18px; flex-wrap: wrap; }
-.raf-app .filter-field label { display: block; font-size: .66rem; font-weight: 700; letter-spacing: .05em;
-  text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }
-.raf-app .filter-note { grid-column: 1 / -1; font-size: .78rem; color: var(--text-2); background: var(--surface-2);
-  border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
-.raf-app .filter-note b { color: var(--text-1); }
-.raf-app .note-box { border-left: 3px solid var(--brand-2); background: var(--brand-tint); border-radius: 0 8px 8px 0; padding: 10px 14px; }
-.raf-app .note-box-title { font-size: .72rem; font-weight: 800; color: var(--brand); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
-.raf-app .note-line { font-size: .76rem; color: var(--text-2); margin-bottom: 4px; line-height: 1.4; }
-.raf-app .note-line:last-child { margin-bottom: 0; }
-.raf-app .note-line b { color: var(--text-1); }
+/* .filter-panel/.filter-fields/.filter-field/.note-box/.filter-note (the
+   Frequency/Criticality/Risk Area filter bar + "Note on the dashboard"
+   box) removed - not currently required. */
 .raf-app .raf-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 2px solid var(--border); margin-bottom: 18px; }
 .raf-app .raf-tab { background: none; border: none; font-family: inherit; font-size: .84rem; font-weight: 700;
   color: var(--text-2); padding: 12px 18px; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: color .2s, border-color .2s; }
@@ -562,8 +550,30 @@ const RAF_STYLE_BLOCK = `<style>
 .raf-app .zone-desc { font-size: .8rem; color: var(--text-2); margin-bottom: 14px; }
 .raf-app .zone-select { display: flex; align-items: center; gap: 8px; }
 .raf-app .zone-select label { font-size: .72rem; color: var(--text-2); font-weight: 700; }
-/* .ind-*/.rag-pill (Critical Risk Indicators cards) removed along with
-   that zone - not currently required. */
+/* Zone 1 - Critical Risk Indicators: a blue header bar (top of the same
+   .zone-panel used by every other zone) plus a grid of curated cards. */
+.raf-app .crit-header { background: linear-gradient(135deg, var(--navy) 0%, var(--brand-2) 100%);
+  color: #fff; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.raf-app .crit-header h3 { font-size: 1.02rem; font-weight: 800; margin: 0; letter-spacing: -.01em; }
+.raf-app .crit-header-show { display: flex; align-items: center; gap: 9px; font-size: .8rem; font-weight: 700; color: #fff; }
+.raf-app .crit-header-show select { font-size: .78rem; padding: 6px 9px; }
+.raf-app .ind-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 13px; }
+.raf-app .ind-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 12px;
+  padding: 14px; cursor: pointer; transition: border-color .2s, transform .2s; }
+.raf-app .ind-card:hover { border-color: var(--brand-2); transform: translateY(-2px); }
+.raf-app .ind-label { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--text-3); }
+.raf-app .ind-value { display: block; font-size: .82rem; font-weight: 700; color: var(--text-1); margin: 1px 0 8px; line-height: 1.3; }
+.raf-app .ind-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.raf-app .ind-table th { text-align: left; font-size: .6rem; font-weight: 700; text-transform: uppercase;
+  color: var(--text-3); padding-bottom: 6px; border-bottom: 1.5px solid var(--border); }
+.raf-app .ind-table th:last-child, .raf-app .ind-table td:last-child { text-align: right; }
+.raf-app .ind-table td { padding: 7px 0; border-bottom: 1px solid var(--border); color: var(--text-2); }
+.raf-app .ind-table tr:last-child td { border-bottom: none; }
+.raf-app .rag-pill { display: inline-block; padding: 2px 10px; border-radius: 5px; font-weight: 800; color: var(--text-1); }
+.raf-app .rag-pill.good { background: var(--good-tint); }
+.raf-app .rag-pill.warning { background: var(--warning-tint); }
+.raf-app .rag-pill.critical { background: var(--critical-tint); }
 /* table-layout:fixed + an explicit first-column width makes the wider
    (one row per criticality, periods spread out as column groups) heatmap
    distribute its remaining columns evenly across the full panel width
@@ -594,11 +604,10 @@ const RAF_STYLE_BLOCK = `<style>
 .raf-app .tm-amber { background: var(--warning); }
 .raf-app .tm-red { background: var(--critical); }
 .raf-app .tm-right { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.raf-app .trend-legend { display: flex; gap: 16px; margin-bottom: 8px; font-size: .76rem; color: var(--text-2); font-weight: 600; }
-.raf-app .trend-legend span { display: flex; align-items: center; gap: 6px; }
-.raf-app .trend-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-.raf-app .trend-chart-wrap { overflow-x: auto; max-width: 560px; }
-.raf-app .trend-chart-wrap svg { width: 100%; height: auto; display: block; }
+/* .trend-legend/.trend-chart-wrap (Trend Analysis-exclusive chart chrome)
+   removed along with that tab - not currently required. .trend-block/
+   .trend-caption below are a DIFFERENT, still-used thing - the "no prior
+   period" glyph on every metric-detail card - and are kept. */
 .raf-app .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 14px; }
 .raf-app .domain-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 14px;
   padding: 18px; cursor: pointer; transition: border-color .2s, transform .2s; }
@@ -686,7 +695,6 @@ const RAF_STYLE_BLOCK = `<style>
 .raf-app .trend-block { display: flex; align-items: center; gap: 8px; }
 .raf-app .trend-block .trend-caption { font-size: .68rem; color: var(--text-3); font-style: italic; }
 @media (max-width: 860px) {
-  .raf-app .filter-panel { grid-template-columns: 1fr; }
   .raf-app .metric-top { grid-template-columns: 1fr; }
 }
 </style>`;
@@ -821,11 +829,53 @@ const RAFResults = {
 };
 
 /* ============================================================================
-   croDashboardView.sas - generate_cro_dashboard_view (Critical Risk
-   Indicators / renderCriticalIndicators removed - not currently required;
-   the rest is untouched, renders croDashboardConfig's data)
+   croDashboardView.sas - generate_cro_dashboard_view. Renders Critical Risk
+   Indicators (Zone 1), Heatmap by Criticality (Zone 2), Treemap by
+   Ownership (Zone 3). (Trend Analysis by Pillar / Zone 4 has been removed
+   along with its tab - not currently required.)
    ============================================================================ */
+// Zone 1: a small, business-curated set of featured metrics ("critical"
+// here means "marked for CRO visibility", not a Criticality Level rollup).
+// The 6 {category, id} pairs below are the only hand-picked thing about
+// this zone - every value/status/label shown for them is looked up live
+// from appetiteMetricsConfig, so nothing metric-specific is hardcoded, only
+// WHICH 6 metrics are featured. A pair that no longer resolves is skipped.
+const RAF_CRITICAL_INDICATORS = [
+  { category: "liquidity-risk", id: "liquidity-coverage-ratio-lcr" },
+  { category: "capital", id: "total-capital-by-rwa-pillar-1-pillar-2" },
+  { category: "market-risk", id: "value-at-risk-var" },
+  { category: "interest-rate-in-the-banking-book-irrbb", id: "economic-value-of-equity-eve" },
+  { category: "credit-risk", id: "non-performing-loans-npl-ratio-total" },
+  { category: "liquidity-risk", id: "net-stability-funding-ratio-nsfr" }
+];
 const RAFDashboardView = {
+  // Zone 1: renders the 6 curated Critical Risk Indicator cards. Real
+  // value/status for the sheet's one period, on all 3 displayed rows - the
+  // 2 older reporting-date rows are the same real value copied forward,
+  // same convention as the Heatmap/Treemap "SWAP-IN POINT" placeholders.
+  renderCriticalIndicators() {
+    const periods = ["2026-06-30", "2026-03-31", "2025-12-31"];
+    let html = "";
+    RAF_CRITICAL_INDICATORS.forEach(f => {
+      const list = appetiteMetricsConfig[f.category] || [];
+      const metric = list.find(m => m.id === f.id);
+      if (!metric) return;
+      const cat = riskCategoriesConfig.find(c => c.key === f.category);
+      const riskArea = cat ? cat.title : f.category;
+      const status = RAFStatus.evaluateStatus(metric);
+      const cssClass = RAF_STATUS_CSS_CLASS[status];
+      const valueLabel = RAFUtils.formatPercent(metric.currentValue);
+      html += '<div class="ind-card" onclick="RAFRouting.showCategory(&apos;' + f.category + '&apos;)">';
+      html += '<span class="ind-label">Risk Area</span><span class="ind-value">' + escapeHtml(riskArea) + '</span>';
+      html += '<span class="ind-label">Risk Indicator</span><span class="ind-value">' + escapeHtml(metric.indicator) + '</span>';
+      html += '<table class="ind-table"><thead><tr><th>Reporting Date</th><th>Value</th></tr></thead><tbody>';
+      periods.forEach(d => {
+        html += '<tr><td>' + RAFUtils.formatDate(d) + '</td><td><span class="rag-pill ' + cssClass + '">' + valueLabel + '</span></td></tr>';
+      });
+      html += '</tbody></table></div>';
+    });
+    return html;
+  },
   // One row per criticality level; each period's Green/Amber/Red runs as its
   // own 3-column group left-to-right (was one row per criticality/period
   // pair) - uses the panel's full width properly. Single flat header row
@@ -871,34 +921,6 @@ const RAFDashboardView = {
       html += '</div></div></div>';
     });
     html += "</div>";
-    return html;
-  },
-  renderTrendByPillar() {
-    const cfg = croDashboardConfig.trendByPillar;
-    const periods = cfg.periods;
-    const p1 = cfg.pillar1WatchBreachCount;
-    const p2 = cfg.pillar2WatchBreachCount;
-    const maxVal = Math.max(...p1, ...p2, 4);
-    const left = 40, right = 520, top = 20, bottom = 180;
-    const xAt = i => left + (i * (right - left)) / (periods.length - 1);
-    const yAt = v => bottom - (v / maxVal) * (bottom - top);
-    const pointsFor = arr => arr.map((v, i) => xAt(i).toFixed(1) + "," + yAt(v).toFixed(1)).join(" ");
-    let html = '<div class="trend-legend"><span><i style="background:var(--brand-2)"></i>Pillar 1</span>';
-    html += '<span><i style="background:var(--series-2)"></i>Pillar 2</span></div>';
-    html += '<div class="trend-chart-wrap"><svg viewBox="0 0 560 210" role="img" aria-label="Trend of watch/breach indicator counts by pillar">';
-    [0, 0.25, 0.5, 0.75, 1].forEach(f => {
-      const y = bottom - f * (bottom - top);
-      html += '<line x1="' + left + '" y1="' + y.toFixed(1) + '" x2="' + right + '" y2="' + y.toFixed(1) + '" stroke="#e5e7eb" stroke-width="1"/>';
-      html += '<text x="' + (left - 6) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="11" fill="#9ca3af">' + Math.round(f * maxVal) + '</text>';
-    });
-    html += '<polyline points="' + pointsFor(p1) + '" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
-    html += '<polyline points="' + pointsFor(p2) + '" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
-    periods.forEach((d, i) => {
-      html += '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(p1[i]).toFixed(1) + '" r="4" fill="#3b82f6" stroke="#fff" stroke-width="2"><title>Pillar 1 - ' + RAFUtils.formatDate(d) + ': ' + p1[i] + '</title></circle>';
-      html += '<circle cx="' + xAt(i).toFixed(1) + '" cy="' + yAt(p2[i]).toFixed(1) + '" r="4" fill="#7c3aed" stroke="#fff" stroke-width="2"><title>Pillar 2 - ' + RAFUtils.formatDate(d) + ': ' + p2[i] + '</title></circle>';
-      html += '<text x="' + xAt(i).toFixed(1) + '" y="198" text-anchor="middle" font-size="11" fill="#6b7280">' + RAFUtils.formatDate(d) + '</text>';
-    });
-    html += "</svg></div>";
     return html;
   }
 };
@@ -1283,7 +1305,6 @@ const RAFRouting = {
     // Appetite Framework" - that text now belongs solely to the shared
     // shell header set once in getRAFHTML(), so it isn't shown twice.
     RAFUI.setTitle("CRO Dashboard", riskCategoriesConfig.length + " risk areas - " + totalIndicators + " indicators tracked against Board-approved appetite limits.");
-    raf_updateFilterNote();
   },
   showDomains() {
     this.render(buildRafDomainsHTML());
@@ -1330,23 +1351,16 @@ function getRAFHTML() {
   // "Risk Management Dashboard" - updateContent() resets it back to the
   // default before every route render, so leaving RAF for another route
   // un-stales it automatically. This is also now the ONLY place "Risk
-  // Appetite Framework" appears - the topbar brand text below and the CRO
-  // Dashboard sub-view's own in-page title were the duplicates and have
-  // been removed/reworded accordingly.
+  // Appetite Framework" appears - the CRO Dashboard sub-view's own in-page
+  // title was the duplicate and has been reworded accordingly.
   var shellTitleEl = document.getElementById("page-title");
   if (shellTitleEl) shellTitleEl.textContent = "Risk Appetite Framework";
   let html = RAF_STYLE_BLOCK;
   html += RAF_ICON_DEFS;
+  // The navy/blue ".raf-topbar" gradient bar (brand icon + "CRO Only"
+  // badge) that used to sit above .raf-body has been removed entirely -
+  // not currently required. .raf-body now opens .raf-app directly.
   html += '<div class="raf-app">';
-  html += '  <div class="raf-topbar">';
-  html += '    <div class="raf-topbar-brand">';
-  html += '      <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">';
-  html += '        <path d="M9 17 L14 9 L18 13 L24 5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>';
-  html += '        <circle cx="24" cy="5" r="2.3" fill="#93c5fd"/>';
-  html += '      </svg>';
-  html += '    </div>';
-  html += '    <span class="raf-cro-badge">CRO Only</span>';
-  html += '  </div>';
   html += '  <div class="raf-body">';
   html += '    <div class="crumb" id="raf-breadcrumb-trail"></div>';
   html += '    <h2 class="raf-pagetitle" id="raf-page-title"></h2>';
@@ -1358,48 +1372,29 @@ function getRAFHTML() {
   return html;
 }
 
+// Fixed tab order per the business owner - do not reorder: Critical
+// Indicators, Risk Indicator Treemap, Risk Indicator Heatmap, Risk Domains
+// & Drill Down. Critical Indicators is the default-active tab.
 function buildRafDashboardHTML() {
   let html = "";
-  html += '<div class="filter-panel">';
-  html += '  <div class="filter-fields">';
-  html += '    <div class="filter-field"><label for="rafFrequency">Frequency</label>';
-  html += '      <select id="rafFrequency" onchange="raf_updateFilterNote()">';
-  html += '        <option>Daily</option><option selected>Quarterly</option><option>Monthly</option>';
-  html += '      </select>';
-  html += '    </div>';
-  html += '    <div class="filter-field"><label for="rafCriticality">Criticality</label>';
-  html += '      <select id="rafCriticality" onchange="raf_updateFilterNote()">';
-  html += '        <option selected>All</option><option>Level 1</option><option>Level 2A</option><option>Level 2B</option>';
-  html += '      </select>';
-  html += '    </div>';
-  html += '    <div class="filter-field"><label for="rafRiskArea">Risk Area</label>';
-  html += '      <select id="rafRiskArea" onchange="raf_updateFilterNote()">';
-  html += '        <option selected>All</option>';
-  html += riskCategoriesConfig.map(c => '<option>' + escapeHtml(c.title) + '</option>').join("");
-  html += '      </select>';
-  html += '    </div>';
-  html += '  </div>';
-  html += '  <div class="note-box">';
-  html += '    <div class="note-box-title">Note on the dashboard</div>';
-  html += '    <div class="note-line">Frequency, when selected as <b>Daily</b> - displays the last 31 days / until today (whichever is lower)</div>';
-  html += '    <div class="note-line">Frequency, when selected as <b>Monthly</b> - displays the last 12 months of the current reporting year</div>';
-  html += '    <div class="note-line">Frequency, when selected as <b>Quarter</b> - displays the last 4 quarters of the current reporting year</div>';
-  html += '  </div>';
-  html += '  <div class="filter-note" id="rafFilterNote"></div>';
-  html += '</div>';
   html += '<div class="raf-tabs" role="tablist">';
-  html += '  <button type="button" class="raf-tab active" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap - by Criticality</button>';
-  html += '  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap - by Ownership</button>';
-  html += '  <button type="button" class="raf-tab" data-raf-tab="trend" onclick="raf_showTab(&apos;trend&apos;)">Risk Indicator Trend Analysis - by Pillar</button>';
-  html += '  <button type="button" class="raf-tab" onclick="RAFRouting.showDomains()">Risk Domains &rarr;</button>';
+  html += '  <button type="button" class="raf-tab active" data-raf-tab="critical" onclick="raf_showTab(&apos;critical&apos;)">Critical Indicators</button>';
+  html += '  <button type="button" class="raf-tab" data-raf-tab="treemap" onclick="raf_showTab(&apos;treemap&apos;)">Risk Indicator Treemap</button>';
+  html += '  <button type="button" class="raf-tab" data-raf-tab="heatmap" onclick="raf_showTab(&apos;heatmap&apos;)">Risk Indicator Heatmap</button>';
+  html += '  <button type="button" class="raf-tab" onclick="RAFRouting.showDomains()">Risk Domains &amp; Drill Down &rarr;</button>';
   html += '</div>';
-  html += '<div class="raf-tabpanel active" id="raf-tabpanel-heatmap">';
-  html += '  <div class="zone-panel"><div class="zone-body">';
-  html += '    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>';
-  html += filterBarHtml("raf-heatmap-table");
-  html += '    <div style="overflow-x:auto;">' + RAFDashboardView.renderHeatmapByCriticality().replace('<table class="heatmap-table">', '<table class="heatmap-table" id="raf-heatmap-table">') + '</div>';
-  html += '    <div style="margin-top:10px; text-align:right;"><button class="btn" onclick="exportTableToExcel(&apos;raf-heatmap-table&apos;,&apos;Heatmap by Criticality&apos;,&apos;RAF_Heatmap&apos;)">Export to Excel</button></div>';
-  html += '  </div></div>';
+  html += '<div class="raf-tabpanel active" id="raf-tabpanel-critical">';
+  html += '  <div class="zone-panel">';
+  html += '    <div class="crit-header"><h3>Critical Risk Indicators</h3>';
+  html += '      <div class="crit-header-show">Show';
+  html += '        <select aria-label="Critical indicators view"><option>Top 5 &middot; Monthly</option><option>Top 5 &middot; Quarterly</option><option>Top 10 &middot; Monthly</option></select>';
+  html += '      </div>';
+  html += '    </div>';
+  html += '    <div class="zone-body">';
+  html += '      <p class="zone-desc">Indicators marked for CRO visibility. Each card shows the Reporting Date vs. Value across the last 3 periods - the 2026-06-30 row is live from the sheet; earlier rows are placeholders pending a historical data connection. Click a card to open its full metric detail.</p>';
+  html += '      <div class="ind-grid">' + RAFDashboardView.renderCriticalIndicators() + '</div>';
+  html += '    </div>';
+  html += '  </div>';
   html += '</div>';
   html += '<div class="raf-tabpanel" id="raf-tabpanel-treemap">';
   html += '  <div class="zone-panel">';
@@ -1414,10 +1409,12 @@ function buildRafDashboardHTML() {
   html += '    </div>';
   html += '  </div>';
   html += '</div>';
-  html += '<div class="raf-tabpanel" id="raf-tabpanel-trend">';
+  html += '<div class="raf-tabpanel" id="raf-tabpanel-heatmap">';
   html += '  <div class="zone-panel"><div class="zone-body">';
-  html += '    <p class="zone-desc">Count of indicators in Watch or Breach (Amber + Red), Pillar 1 vs. Pillar 2 (sheet Comments = P1/P2). The 2026-06-30 point is live from the sheet; earlier points are placeholders pending a historical data connection.</p>';
-  html += RAFDashboardView.renderTrendByPillar();
+  html += '    <p class="zone-desc">Number of risk indicators in Green, Amber and Red zones, by criticality level. The 2026-06-30 column is live from the sheet; earlier columns are placeholders pending a historical data connection.</p>';
+  html += filterBarHtml("raf-heatmap-table");
+  html += '    <div style="overflow-x:auto;">' + RAFDashboardView.renderHeatmapByCriticality().replace('<table class="heatmap-table">', '<table class="heatmap-table" id="raf-heatmap-table">') + '</div>';
+  html += '    <div style="margin-top:10px; text-align:right;"><button class="btn" onclick="exportTableToExcel(&apos;raf-heatmap-table&apos;,&apos;Heatmap by Criticality&apos;,&apos;RAF_Heatmap&apos;)">Export to Excel</button></div>';
   html += '  </div></div>';
   html += '</div>';
   return html;
@@ -1430,18 +1427,6 @@ function raf_showTab(tabKey) {
   document.querySelectorAll(".raf-tabpanel").forEach(function (el) {
     el.classList.toggle("active", el.id === "raf-tabpanel-" + tabKey);
   });
-}
-function raf_updateFilterNote() {
-  const freqEl = document.getElementById("rafFrequency");
-  const critEl = document.getElementById("rafCriticality");
-  const areaEl = document.getElementById("rafRiskArea");
-  const note = document.getElementById("rafFilterNote");
-  if (!freqEl || !note) return;
-  const periodEnd = { Daily: RAFUtils.getTodayDate(), Monthly: "2026-06-30", Quarterly: "2026-06-30" };
-  const freq = freqEl.value, crit = critEl.value, area = areaEl.value;
-  note.innerHTML = "Filter selection: report generated for the period <b>" + freq + " - "
-    + RAFUtils.formatDate(periodEnd[freq]) + "</b>, <b>" + crit + "</b> Criticality, showing <b>"
-    + area + "</b> Risk Area" + (area === "All" ? "s" : "") + ".";
 }
 function raf_updateTreemapOwner(select) {
   const body = document.getElementById("rafTreemapZoneBody");

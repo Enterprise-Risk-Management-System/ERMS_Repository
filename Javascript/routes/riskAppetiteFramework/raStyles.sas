@@ -55,12 +55,9 @@
     put '.raf-app * { box-sizing: border-box; }';
     put '.raf-app a { text-decoration: none; color: inherit; }';
 
-    put '.raf-app .raf-topbar { background: linear-gradient(135deg, var(--navy) 0%, var(--brand-2) 100%);';
-    put '  padding: 14px 22px; display: flex; align-items: center; justify-content: space-between;';
-    put '  border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.05); margin-bottom: 20px; }';
-    put '.raf-app .raf-topbar-brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; font-size: 1.05rem; letter-spacing: -.01em; }';
-    put '.raf-app .raf-cro-badge { background: rgba(255,255,255,.18); color: #fff; font-size: .68rem; font-weight: 700;';
-    put '  letter-spacing: .06em; text-transform: uppercase; padding: 4px 11px; border-radius: 20px; border: 1px solid rgba(255,255,255,.35); }';
+    /* .raf-topbar/.raf-topbar-brand/.raf-cro-badge (the navy/blue gradient
+       bar with the brand icon + "CRO Only" badge that used to sit above
+       .raf-body) removed entirely - not currently required. */
     /* No horizontal/bottom padding - RAF content sits flush inside ERMS's own
        #main-panel (which already provides 30px padding), same as every other
        route's content, instead of ERMS's card wrapping a second inset card. */
@@ -83,19 +80,10 @@
     put '.raf-app select { font-family: inherit; font-size: .82rem; font-weight: 700; color: var(--text-1);';
     put '  background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; cursor: pointer; }';
 
-    put '.raf-app .filter-panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;';
-    put '  padding: 16px 20px; margin-bottom: 18px; display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 16px; align-items: start; }';
-    put '.raf-app .filter-fields { display: flex; gap: 18px; flex-wrap: wrap; }';
-    put '.raf-app .filter-field label { display: block; font-size: .66rem; font-weight: 700; letter-spacing: .05em;';
-    put '  text-transform: uppercase; color: var(--text-3); margin-bottom: 5px; }';
-    put '.raf-app .filter-note { grid-column: 1 / -1; font-size: .78rem; color: var(--text-2); background: var(--surface-2);';
-    put '  border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }';
-    put '.raf-app .filter-note b { color: var(--text-1); }';
-    put '.raf-app .note-box { border-left: 3px solid var(--brand-2); background: var(--brand-tint); border-radius: 0 8px 8px 0; padding: 10px 14px; }';
-    put '.raf-app .note-box-title { font-size: .72rem; font-weight: 800; color: var(--brand); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }';
-    put '.raf-app .note-line { font-size: .76rem; color: var(--text-2); margin-bottom: 4px; line-height: 1.4; }';
-    put '.raf-app .note-line:last-child { margin-bottom: 0; }';
-    put '.raf-app .note-line b { color: var(--text-1); }';
+    /* .filter-panel/.filter-fields/.filter-field/.note-box/.filter-note (the
+       Frequency/Criticality/Risk Area filter bar + "Note on the dashboard"
+       box) removed - not currently required; see buildRAF.sas for the
+       matching removal. */
 
     /* Tab bar - replaces the 4 stacked zone panels. Same underline-on-active
        idiom as ERMS's own .nav-menu a::after hover underline (css.sas), so
@@ -120,9 +108,34 @@
     put '.raf-app .zone-select { display: flex; align-items: center; gap: 8px; }';
     put '.raf-app .zone-select label { font-size: .72rem; color: var(--text-2); font-weight: 700; }';
 
-    /* .ind-*/.rag-pill (Critical Risk Indicators cards) removed along with
-       that zone - not currently required; see buildRAF.sas/
-       croDashboardView.sas/croDashboardConfig.sas for the matching removal. */
+    /* Zone 1 - Critical Risk Indicators: a blue header bar (top of the same
+       .zone-panel used by every other zone - .zone-panel already has
+       overflow:hidden + matching border-radius, so a plain rectangular
+       header here is auto-clipped to rounded top corners for free, no new
+       wrapper class needed) plus a grid of curated indicator cards below. */
+    put '.raf-app .crit-header { background: linear-gradient(135deg, var(--navy) 0%, var(--brand-2) 100%);';
+    put '  color: #fff; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }';
+    put '.raf-app .crit-header h3 { font-size: 1.02rem; font-weight: 800; margin: 0; letter-spacing: -.01em; }';
+    put '.raf-app .crit-header-show { display: flex; align-items: center; gap: 9px; font-size: .8rem; font-weight: 700; color: #fff; }';
+    put '.raf-app .crit-header-show select { font-size: .78rem; padding: 6px 9px; }';
+
+    put '.raf-app .ind-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 13px; }';
+    put '.raf-app .ind-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 12px;';
+    put '  padding: 14px; cursor: pointer; transition: border-color .2s, transform .2s; }';
+    put '.raf-app .ind-card:hover { border-color: var(--brand-2); transform: translateY(-2px); }';
+    put '.raf-app .ind-label { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .04em;';
+    put '  text-transform: uppercase; color: var(--text-3); }';
+    put '.raf-app .ind-value { display: block; font-size: .82rem; font-weight: 700; color: var(--text-1); margin: 1px 0 8px; line-height: 1.3; }';
+    put '.raf-app .ind-table { width: 100%; border-collapse: collapse; font-size: .78rem; }';
+    put '.raf-app .ind-table th { text-align: left; font-size: .6rem; font-weight: 700; text-transform: uppercase;';
+    put '  color: var(--text-3); padding-bottom: 6px; border-bottom: 1.5px solid var(--border); }';
+    put '.raf-app .ind-table th:last-child, .raf-app .ind-table td:last-child { text-align: right; }';
+    put '.raf-app .ind-table td { padding: 7px 0; border-bottom: 1px solid var(--border); color: var(--text-2); }';
+    put '.raf-app .ind-table tr:last-child td { border-bottom: none; }';
+    put '.raf-app .rag-pill { display: inline-block; padding: 2px 10px; border-radius: 5px; font-weight: 800; color: var(--text-1); }';
+    put '.raf-app .rag-pill.good { background: var(--good-tint); }';
+    put '.raf-app .rag-pill.warning { background: var(--warning-tint); }';
+    put '.raf-app .rag-pill.critical { background: var(--critical-tint); }';
 
     /* table-layout:fixed + an explicit first-column width makes the now
        wider (one row per criticality, periods spread out as column groups)
@@ -161,18 +174,12 @@
     put '.raf-app .tm-red { background: var(--critical); }';
     put '.raf-app .tm-right { display: flex; flex-direction: column; gap: 2px; flex: 1; }';
 
-    put '.raf-app .trend-legend { display: flex; gap: 16px; margin-bottom: 8px; font-size: .76rem; color: var(--text-2); font-weight: 600; }';
-    put '.raf-app .trend-legend span { display: flex; align-items: center; gap: 6px; }';
-    put '.raf-app .trend-legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }';
-    /* Fluid SVG - the chart keeps its logical 560x210 coordinate system via
-       viewBox but stretches to fill the tab's full width instead of sitting
-       at a fixed 560px inside a much wider panel. */
-    /* Capped at the chart's own viewBox width (560) so it renders at its
-       natural size on wide panels instead of stretching edge-to-edge -
-       still shrinks further on narrow screens since width stays 100% up
-       to that cap. */
-    put '.raf-app .trend-chart-wrap { overflow-x: auto; max-width: 560px; }';
-    put '.raf-app .trend-chart-wrap svg { width: 100%; height: auto; display: block; }';
+    /* .trend-legend/.trend-chart-wrap (Trend Analysis-exclusive chart chrome)
+       removed along with that tab - not currently required; see
+       buildRAF.sas/croDashboardView.sas for the matching removal. NOTE:
+       .trend-block/.trend-caption below are a DIFFERENT, still-used thing -
+       the "no prior period" glyph on every metric-detail card
+       (appetiteResultsView.sas) - and are kept. */
 
     put '.raf-app .domain-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 14px; }';
     put '.raf-app .domain-card { background: var(--surface-1); border: 2px solid var(--border); border-radius: 14px;';
@@ -271,7 +278,6 @@
     put '.raf-app .trend-block .trend-caption { font-size: .68rem; color: var(--text-3); font-style: italic; }';
 
     put '@media (max-width: 860px) {';
-    put '  .raf-app .filter-panel { grid-template-columns: 1fr; }';
     put '  .raf-app .metric-top { grid-template-columns: 1fr; }';
     put '}';
     put '</style>`;';

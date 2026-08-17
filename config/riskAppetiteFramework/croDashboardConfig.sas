@@ -1,22 +1,23 @@
 /* ============================================================================
    CRO DASHBOARD CONFIGURATION
-   Drives the 3 zones on the CRO Dashboard (reached via the navbar's
-   Dashboard dropdown -> CRO Dashboard -> RAF - Risk Appetite Framework):
-   Heatmap by Criticality, Treemap by Ownership, Trend Analysis by Pillar -
-   plus the (currently unused) KPI strip. (Critical Risk Indicators has been
-   removed - not currently required; see buildRAF.sas/croDashboardView.sas/
+   Drives 2 of the CRO Dashboard's zones (reached via the navbar's Dashboard
+   dropdown -> CRO Dashboard -> RAF - Risk Appetite Framework): Heatmap by
+   Criticality and Treemap by Ownership - plus the (currently unused) KPI
+   strip. (Critical Risk Indicators/Zone 1 is built client-side straight off
+   appetiteMetricsConfig - see croDashboardView.sas - so it needs no entry
+   here. Trend Analysis by Pillar has been removed along with its tab - not
+   currently required; see buildRAF.sas/croDashboardView.sas/
    rafDashboardAggregates.sas for the matching removal.)
 
    NOW DATA-DRIVEN off work.raf_metrics_final wherever the sheet has the
-   answer: KPI counts and the NEWEST period of the Heatmap/Treemap/Trend
-   zones are all real, computed by rafDashboardAggregates.sas.
-   RAF_Q2_2026.xlsx has exactly one reporting
-   period, so the 3 "prior period" columns those 3 zones display have no
-   real data to compute from - each is the SAME group's real current count
-   copied forward, clearly commented at its build site in
-   rafDashboardAggregates.sas as the swap-in point for when a real
-   period-over-period backend exists. `isPlaceholderData: true` reflects
-   that those prior-period columns are still illustrative.
+   answer: KPI counts and the NEWEST period of the Heatmap/Treemap zones are
+   all real, computed by rafDashboardAggregates.sas. RAF_Q2_2026.xlsx has
+   exactly one reporting period, so the 3 "prior period" columns those 2
+   zones display have no real data to compute from - each is the SAME
+   group's real current count copied forward, clearly commented at its
+   build site in rafDashboardAggregates.sas as the swap-in point for when a
+   real period-over-period backend exists. `isPlaceholderData: true`
+   reflects that those prior-period columns are still illustrative.
 
    No visual/interaction change versus before - croDashboardView.sas's
    render functions already consume this exact shape; only what builds the
@@ -45,11 +46,7 @@
     set work.raf_treemap_final point=1;
     put opts_line $varying8100. opts_len @;
     put ',';
-    put treemap_line $varying8100. treemap_len @;
-    put ',';
-
-    set work.raf_pillar_final point=1;
-    put js_line $varying1000. js_len;
+    put treemap_line $varying8100. treemap_len;
 
     put '});';
 %mend croDashboardConfig;

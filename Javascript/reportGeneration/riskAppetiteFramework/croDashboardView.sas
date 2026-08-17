@@ -1,11 +1,10 @@
 /* ============================================================================
    RAF CRO DASHBOARD VIEW MODULE
-   Renders the CRO Dashboard's zones from croDashboardConfig.sas: Heatmap by
-   Criticality (Zone 2), Treemap by Ownership (Zone 3), Trend Analysis by
-   Pillar (Zone 4). (Critical Risk Indicators / Zone 1 has been removed -
+   Renders the CRO Dashboard's zones from croDashboardConfig.sas: Critical
+   Risk Indicators (Zone 1), Heatmap by Criticality (Zone 2), Treemap by
+   Ownership (Zone 3). (Trend Analysis by Pillar / Zone 4 has been removed -
    not currently required; see buildRAF.sas/croDashboardConfig.sas/
-   rafDashboardAggregates.sas for the matching removal. Zone numbering below
-   is left as-is/2-3-4 to match those other files rather than renumbered.)
+   rafDashboardAggregates.sas for the matching removal.)
    Kept separate from the route builder (buildCroDashboard.sas), which only
    assembles the filter bar + zone shells - this file renders the
    data-driven parts, mirroring the reference app's separation between a
@@ -13,7 +12,61 @@
    ============================================================================ */
 %macro generate_cro_dashboard_view;
     put '// RAF CRO Dashboard View Module';
+
+    /* Zone 1: Critical Risk Indicators - a small, business-curated set of
+       featured metrics ("critical" here means "marked for CRO visibility",
+       not a Criticality Level rollup - Criticality Level is its own real
+       sheet column, already used elsewhere, e.g. the metric-card chip and
+       Zone 2's heatmap rows). The 6 {category, id} pairs below are the only
+       hand-picked thing about this zone - every value/status/label shown
+       for them is looked up live from appetiteMetricsConfig, so nothing
+       metric-specific is hardcoded, only WHICH 6 metrics are featured. A
+       pair that no longer resolves (e.g. an id changed upstream) is simply
+       skipped, not a broken card. */
+    put 'const RAF_CRITICAL_INDICATORS = [';
+    put '  { category: "liquidity-risk", id: "liquidity-coverage-ratio-lcr" },';
+    put '  { category: "capital", id: "total-capital-by-rwa-pillar-1-pillar-2" },';
+    put '  { category: "market-risk", id: "value-at-risk-var" },';
+    put '  { category: "interest-rate-in-the-banking-book-irrbb", id: "economic-value-of-equity-eve" },';
+    put '  { category: "credit-risk", id: "non-performing-loans-npl-ratio-total" },';
+    put '  { category: "liquidity-risk", id: "net-stability-funding-ratio-nsfr" }';
+    put '];';
+
     put 'const RAFDashboardView = {';
+
+    /* Reporting-date row = the sheet''s one real period plus 2 placeholder
+       rows (same real current value/status copied forward) - identical
+       convention to the Heatmap/Treemap "SWAP-IN POINT" pattern in
+       rafDashboardAggregates.sas, applied here in JS since this zone''s
+       card content is looked up client-side rather than pre-aggregated in
+       SAS. Swap to real history later by replacing this loop''s per-period
+       lookup without touching the card markup. */
+    put '  // Zone 1: renders the 6 curated Critical Risk Indicator cards. Real';
+    put '  // value/status for the sheet''s one period, on all 3 displayed rows -';
+    put '  // see the file header note above for why.';
+    put '  renderCriticalIndicators() {';
+    put '    const periods = ["2026-06-30", "2026-03-31", "2025-12-31"];';
+    put '    let html = "";';
+    put '    RAF_CRITICAL_INDICATORS.forEach(f => {';
+    put '      const list = appetiteMetricsConfig[f.category] || [];';
+    put '      const metric = list.find(m => m.id === f.id);';
+    put '      if (!metric) return;';
+    put '      const cat = riskCategoriesConfig.find(c => c.key === f.category);';
+    put '      const riskArea = cat ? cat.title : f.category;';
+    put '      const status = RAFStatus.evaluateStatus(metric);';
+    put '      const cssClass = RAF_STATUS_CSS_CLASS[status];';
+    put '      const valueLabel = RAFUtils.formatPercent(metric.currentValue);';
+    put '      html += ''<div class="ind-card" onclick="RAFRouting.showCategory(&apos;'' + f.category + ''&apos;)">'';';
+    put '      html += ''<span class="ind-label">Risk Area</span><span class="ind-value">'' + escapeHtml(riskArea) + ''</span>'';';
+    put '      html += ''<span class="ind-label">Risk Indicator</span><span class="ind-value">'' + escapeHtml(metric.indicator) + ''</span>'';';
+    put '      html += ''<table class="ind-table"><thead><tr><th>Reporting Date</th><th>Value</th></tr></thead><tbody>'';';
+    put '      periods.forEach(d => {';
+    put '        html += ''<tr><td>'' + RAFUtils.formatDate(d) + ''</td><td><span class="rag-pill '' + cssClass + ''">'' + valueLabel + ''</span></td></tr>'';';
+    put '      });';
+    put '      html += ''</tbody></table></div>'';';
+    put '    });';
+    put '    return html;';
+    put '  },';
 
     /* Zone 2: criticality x period heatmap - ONE row per criticality level,
        with each period''s Green/Amber/Red as its own 3-column group running
@@ -69,36 +122,6 @@
     put '      html += ''</div></div></div>'';';
     put '    });';
     put '    html += "</div>";';
-    put '    return html;';
-    put '  },';
-
-    put '  // Zone 4: a 2-line SVG trend chart, Pillar 1 vs Pillar 2 watch/breach counts';
-    put '  renderTrendByPillar() {';
-    put '    const cfg = croDashboardConfig.trendByPillar;';
-    put '    const periods = cfg.periods;';
-    put '    const p1 = cfg.pillar1WatchBreachCount;';
-    put '    const p2 = cfg.pillar2WatchBreachCount;';
-    put '    const maxVal = Math.max(...p1, ...p2, 4);';
-    put '    const left = 40, right = 520, top = 20, bottom = 180;';
-    put '    const xAt = i => left + (i * (right - left)) / (periods.length - 1);';
-    put '    const yAt = v => bottom - (v / maxVal) * (bottom - top);';
-    put '    const pointsFor = arr => arr.map((v, i) => xAt(i).toFixed(1) + "," + yAt(v).toFixed(1)).join(" ");';
-    put '    let html = ''<div class="trend-legend"><span><i style="background:var(--brand-2)"></i>Pillar 1</span>'';';
-    put '    html += ''<span><i style="background:var(--series-2)"></i>Pillar 2</span></div>'';';
-    put '    html += ''<div class="trend-chart-wrap"><svg viewBox="0 0 560 210" role="img" aria-label="Trend of watch/breach indicator counts by pillar">'';';
-    put '    [0, 0.25, 0.5, 0.75, 1].forEach(f => {';
-    put '      const y = bottom - f * (bottom - top);';
-    put '      html += ''<line x1="'' + left + ''" y1="'' + y.toFixed(1) + ''" x2="'' + right + ''" y2="'' + y.toFixed(1) + ''" stroke="#e5e7eb" stroke-width="1"/>'';';
-    put '      html += ''<text x="'' + (left - 6) + ''" y="'' + (y + 4).toFixed(1) + ''" text-anchor="end" font-size="11" fill="#9ca3af">'' + Math.round(f * maxVal) + ''</text>'';';
-    put '    });';
-    put '    html += ''<polyline points="'' + pointsFor(p1) + ''" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'';';
-    put '    html += ''<polyline points="'' + pointsFor(p2) + ''" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'';';
-    put '    periods.forEach((d, i) => {';
-    put '      html += ''<circle cx="'' + xAt(i).toFixed(1) + ''" cy="'' + yAt(p1[i]).toFixed(1) + ''" r="4" fill="#3b82f6" stroke="#fff" stroke-width="2"><title>Pillar 1 - '' + RAFUtils.formatDate(d) + '': '' + p1[i] + ''</title></circle>'';';
-    put '      html += ''<circle cx="'' + xAt(i).toFixed(1) + ''" cy="'' + yAt(p2[i]).toFixed(1) + ''" r="4" fill="#7c3aed" stroke="#fff" stroke-width="2"><title>Pillar 2 - '' + RAFUtils.formatDate(d) + '': '' + p2[i] + ''</title></circle>'';';
-    put '      html += ''<text x="'' + xAt(i).toFixed(1) + ''" y="198" text-anchor="middle" font-size="11" fill="#6b7280">'' + RAFUtils.formatDate(d) + ''</text>'';';
-    put '    });';
-    put '    html += "</svg></div>";';
     put '    return html;';
     put '  }';
     put '};';
